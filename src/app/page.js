@@ -1,26 +1,16 @@
-import Image from "next/image";
+import Sidebar from "../components/Sidebar";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-md p-6 flex flex-col items-center justify-start gap-6">
-        <Image
-          className="dark:invert"
-          src="/1desk.svg"
-          alt="Onedesk logo"
-          width={40}
-          height={40}
-          priority
-        />
-        <h2 className="font-bold text-xl text-black">Onedesk</h2>
-      </div>
+    <div className="flex min-h-screen">
+      {/* Intégration de la sidebar */}
+      <Sidebar />
 
       {/* Main Content */}
-      <div className="flex-1 p-8 pb-20 flex items-center justify-center">
-        <main className="flex flex-col gap-[32px] items-center text-black">
-          <h1 className="text-4xl font-bold text-center">Welcome to Onedesk</h1>
-          <p className="text-lg text-center">Your digital workspace</p>
+      <div className="flex-1 p-8 pb-20 flex items-center justify-center bg-white text-gray-800">
+        <main className="flex flex-col gap-[32px] items-center">
+          <h1 className="text-4xl font-bold text-center">Bienvenue sur Onedesk</h1>
+          <p className="text-lg text-center text-gray-600">Votre espace de travail numérique</p>
         </main>
       </div>
     </div>
