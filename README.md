@@ -6,24 +6,6 @@
 
 **OneDesk** est une plateforme SaaS moderne qui combine les fonctionnalités d'un tableau blanc et d'une gestion de projet, inspirée de Notion. Ce projet est conçu pour être un outil simple, fluide et collaboratif, permettant aux utilisateurs de gérer leurs idées, projets, tâches et bien plus, le tout dans un environnement intégré et entièrement automatisé.
 
-La plateforme offre une interface propre, épurée, et hautement personnalisable pour vous permettre de garder toutes vos informations organisées et accessibles, où que vous soyez.
-
-## Fonctionnalités
-
-- **Tableau blanc interactif** : Utilisez un tableau blanc pour organiser vos idées, projets et tâches en temps réel.
-- **Gestion de projet** : Organisez des tâches, assignez des responsabilités, et suivez la progression de chaque projet.
-- **Personnalisation** : Modifiez les couleurs, les styles et les widgets de votre espace pour qu'il réponde à vos besoins.
-- **Collaboratif** : Partagez vos espaces de travail avec d'autres utilisateurs, collaborez en temps réel.
-- **Automatisation** : Intégration avec plusieurs API pour automatiser des tâches et processus.
-
-## Technologies
-
-- **Frontend** : React.js, Next.js
-- **Backend** : Node.js, Express
-- **Base de données** : MongoDB
-- **API utilisées** : API gratuites pour la gestion de projet (ex. Trello API)
-- **Hébergement** : Heroku / Vercel
-
 ## Installation
 
 1. Clonez ce repo :
@@ -48,26 +30,6 @@ La plateforme offre une interface propre, épurée, et hautement personnalisable
 
 Le projet sera accessible à http://localhost:3000.
 
-## Structure du projet
-
-Voici une vue d'ensemble de la structure des dossiers du projet :
-
-```
-onedesk/
-│
-├── public/               # Fichiers statiques (images, icônes, etc.)
-├── src/
-│   ├── app/              # Application de base de NextJS
-│   ├── components/       # Composants React
-│   ├── pages/            # Pages de l'application
-│   ├── styles/           # Styles CSS/SCSS
-│   ├── utils/            # Utilitaires et helpers
-│   └── services/         # Logique de gestion API, base de données
-│
-├── package.json          # Dépendances et scripts
-└── README.md             # Ce fichier
-```
-
 ## Palette de couleurs
 
 Pour une expérience utilisateur cohérente et agréable, nous avons choisi une palette de couleurs modernes et douces :
@@ -87,14 +49,6 @@ Les contributions sont les bienvenues ! Pour contribuer au projet, veuillez suiv
 4. Committez vos changements (`git commit -m 'Ajout de fonctionnalité X'`).
 5. Poussez votre branche (`git push origin feature/nom-de-la-fonctionnalité`).
 6. Créez une pull request.
-
-## Roadmap
-
-- Initialisation du projet
-- Ajout de fonctionnalités collaboratives (partage de tableaux)
-- Intégration d'APIs externes pour automatisation
-- Optimisation des performances
-- Version stable pour production
 
 ## License
 
