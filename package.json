@@ -10,9 +10,13 @@
   },
   "dependencies": {
     "lucide-react": "^0.487.0",
+    "mysql2": "^3.9.1",
     "next": "15.2.4",
+    "next-auth": "^4.24.7",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "serverless-mysql": "^1.5.5",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

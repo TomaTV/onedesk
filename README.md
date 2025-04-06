@@ -57,6 +57,7 @@ onedesk/
 │
 ├── public/               # Fichiers statiques (images, icônes, etc.)
 ├── src/
+│   ├── app/              # Application de base de NextJS
 │   ├── components/       # Composants React
 │   ├── pages/            # Pages de l'application
 │   ├── styles/           # Styles CSS/SCSS
