@@ -42,7 +42,9 @@ const Sidebar = ({ activeWorkspaceId, activeChannelId }) => {
   });
 
   // État pour suivre la sélection active
-  const [activeWorkspace, setActiveWorkspace] = useState(activeWorkspaceId || null);
+  const [activeWorkspace, setActiveWorkspace] = useState(
+    activeWorkspaceId || null
+  );
   const [activeChannel, setActiveChannel] = useState({
     workspace: activeWorkspaceId || null,
     channel: activeChannelId || null,
@@ -61,7 +63,7 @@ const Sidebar = ({ activeWorkspaceId, activeChannelId }) => {
       try {
         setLoading((prev) => ({ ...prev, workspaces: true }));
         const response = await fetch("/api/workspaces", {
-          cache: "no-store"
+          cache: "no-store",
         });
 
         if (!response.ok) {
@@ -98,7 +100,7 @@ const Sidebar = ({ activeWorkspaceId, activeChannelId }) => {
       // Utiliser workspacesData si fourni, sinon workspaces
       const wsData = workspacesData || workspaces;
       const workspaceObj = wsData.find((w) => w.id === workspaceId);
-      
+
       if (!workspaceObj || !workspaceObj.name) {
         throw new Error(`Workspace ${workspaceId} introuvable`);
       }
@@ -143,16 +145,16 @@ const Sidebar = ({ activeWorkspaceId, activeChannelId }) => {
     try {
       // Fermer le dropdown immédiatement
       setWorkspacesDropdownOpen(false);
-      
+
       // Trouver le workspace
-      const workspaceObj = workspaces.find(w => w.id === workspaceId);
+      const workspaceObj = workspaces.find((w) => w.id === workspaceId);
       if (!workspaceObj) return;
-      
+
       console.log(`Navigation vers workspace: ${workspaceObj.name}`);
-      
+
       // Déterminer le premier channel disponible
       let channelsData = channels[workspaceId] || [];
-      
+
       // Si pas de channels en cache, essayer de les charger
       if (channelsData.length === 0) {
         try {
@@ -161,20 +163,20 @@ const Sidebar = ({ activeWorkspaceId, activeChannelId }) => {
           console.error("Erreur chargement channels:", err);
         }
       }
-      
-      // Utiliser le router pour naviguer au lieu de window.location.href 
+
+      // Utiliser le router pour naviguer au lieu de window.location.href
       // pour éviter le double rechargement de la page
       if (channelsData && channelsData.length > 0) {
         const firstChannelName = channelsData[0].name;
         const firstChannelId = channelsData[0].id;
-        
+
         // Mettre à jour les états locaux
         setActiveWorkspace(workspaceId);
         setActiveChannel({
           workspace: workspaceId,
-          channel: firstChannelId
+          channel: firstChannelId,
         });
-        
+
         // Navigation sans recharger la page avec le router Next.js
         router.push(`/${workspaceObj.name}/${firstChannelName}`);
       } else {
@@ -182,65 +184,65 @@ const Sidebar = ({ activeWorkspaceId, activeChannelId }) => {
         setActiveWorkspace(workspaceId);
         setActiveChannel({
           workspace: workspaceId,
-          channel: null
+          channel: null,
         });
-        
+
         router.push(`/${workspaceObj.name}`);
       }
-      
     } catch (error) {
       console.error("Erreur de navigation workspace:", error);
     }
   };
-  
+
   // Navigation entre channels avec mise à jour de l'interface et de l'URL
   const handleChannelClick = (channelId, channelName) => {
     // Ignorer si déjà sur ce channel
     if (channelId === activeChannel.channel) {
       return;
     }
-    
+
     try {
       // Trouver le workspace actif
-      const workspaceObj = workspaces.find(w => w.id === activeWorkspace);
+      const workspaceObj = workspaces.find((w) => w.id === activeWorkspace);
       if (!workspaceObj) return;
-      
+
       // Obtenir le channel complet
-      const channelObj = channels[activeWorkspace]?.find(c => c.id === channelId);
+      const channelObj = channels[activeWorkspace]?.find(
+        (c) => c.id === channelId
+      );
       if (!channelObj) return;
-      
+
       // 1. Mettre à jour l'état actif pour actualiser l'interface
       setActiveChannel({
         workspace: activeWorkspace,
-        channel: channelId
+        channel: channelId,
       });
-      
+
       // 2. Mettre à jour l'URL sans recharger la page
       const url = `/${workspaceObj.name}/${channelName}`;
       console.log(`Navigation vers channel: ${channelName}`);
-      
+
       window.history.pushState(
-        { 
+        {
           workspaceId: activeWorkspace,
           channelId: channelId,
-          channelName: channelName
+          channelName: channelName,
         },
         channelName, // Titre
         url
       );
-      
+
       // 3. Déclencher un événement personnalisé pour informer la page de channel
-      const channelEvent = new CustomEvent('oneskChannelChanged', {
-        detail: { 
-          channelId, 
+      const channelEvent = new CustomEvent("oneskChannelChanged", {
+        detail: {
+          channelId,
           channelName,
           workspaceId: activeWorkspace,
           workspaceName: workspaceObj.name,
-          channel: channelObj
-        }
+          channel: channelObj,
+        },
       });
       window.dispatchEvent(channelEvent);
-      
     } catch (error) {
       console.error("Erreur navigation channel:", error);
     }
@@ -276,7 +278,10 @@ const Sidebar = ({ activeWorkspaceId, activeChannelId }) => {
   useEffect(() => {
     if (activeWorkspace) {
       // Vérifier si les channels sont déjà en cache
-      if (!channels[activeWorkspace] || channels[activeWorkspace].length === 0) {
+      if (
+        !channels[activeWorkspace] ||
+        channels[activeWorkspace].length === 0
+      ) {
         fetchChannels(activeWorkspace);
       }
     }
@@ -287,12 +292,14 @@ const Sidebar = ({ activeWorkspaceId, activeChannelId }) => {
     if (activeWorkspaceId && activeWorkspaceId !== activeWorkspace) {
       setActiveWorkspace(activeWorkspaceId);
     }
-    
-    if (activeChannelId && 
-        (!activeChannel || activeChannelId !== activeChannel.channel)) {
-      setActiveChannel((prev) => ({ 
-        workspace: activeWorkspaceId || prev.workspace, 
-        channel: activeChannelId 
+
+    if (
+      activeChannelId &&
+      (!activeChannel || activeChannelId !== activeChannel.channel)
+    ) {
+      setActiveChannel((prev) => ({
+        workspace: activeWorkspaceId || prev.workspace,
+        channel: activeChannelId,
       }));
     }
   }, [activeWorkspaceId, activeChannelId, activeWorkspace, activeChannel]);
@@ -325,8 +332,17 @@ const Sidebar = ({ activeWorkspaceId, activeChannelId }) => {
 
       if (workspaceData.id) {
         // Modification d'un workspace existant
+        // Récupérer l'ancien nom du workspace directement
+        const oldWorkspaceName = workspaces.find(
+          (w) => w.id === workspaceData.id
+        )?.name;
+
+        if (!oldWorkspaceName) {
+          throw new Error("Workspace not found");
+        }
+
         response = await fetch(
-          `/api/workspaces/${encodeURIComponent(workspaceData.name)}`,
+          `/api/workspaces/${encodeURIComponent(oldWorkspaceName)}`,
           {
             method: "PATCH",
             headers: {
@@ -480,10 +496,20 @@ const Sidebar = ({ activeWorkspaceId, activeChannelId }) => {
 
       if (channelData.id) {
         // Modification d'un channel existant
+        // Récupérer l'ancien nom du channel
+        const currentChannels = channels[activeWorkspace] || [];
+        const oldChannelName = currentChannels.find(
+          (c) => c.id === channelData.id
+        )?.name;
+
+        if (!oldChannelName) {
+          throw new Error("Channel not found");
+        }
+
         response = await fetch(
           `/api/workspaces/${encodeURIComponent(
             workspaceName
-          )}/channels/${encodeURIComponent(channelData.name)}`,
+          )}/channels/${encodeURIComponent(oldChannelName)}`,
           {
             method: "PATCH",
             headers: {
@@ -713,7 +739,9 @@ const Sidebar = ({ activeWorkspaceId, activeChannelId }) => {
                         activeChannel.workspace === activeWorkspace &&
                         activeChannel.channel === channel.id
                       }
-                      onClick={() => handleChannelClick(channel.id, channel.name)}
+                      onClick={() =>
+                        handleChannelClick(channel.id, channel.name)
+                      }
                       onMouseEnter={() => setHoveredChannel(channel.id)}
                       onMouseLeave={() => setHoveredChannel(null)}
                       isHovered={hoveredChannel === channel.id}

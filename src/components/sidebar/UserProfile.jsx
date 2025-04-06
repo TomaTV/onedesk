@@ -1,10 +1,13 @@
 "use client";
 import React from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Bell, Settings, Loader2, LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 const UserProfile = ({ user, loading, error }) => {
+  const router = useRouter();
+
   // Fonction pour obtenir l'initiale du prénom
   const getInitial = (name) => {
     if (!name) return "";
@@ -42,15 +45,15 @@ const UserProfile = ({ user, loading, error }) => {
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-xs shadow-sm">
           {user.avatar ? (
-          <Image
-          src={user.avatar}
-          alt={user.name}
-          width={32}
-          height={32}
-          className="object-cover w-full h-full"
-          />
+            <Image
+              src={user.avatar}
+              alt={user.name}
+              width={32}
+              height={32}
+              className="object-cover w-full h-full"
+            />
           ) : (
-          getInitial(user.name)
+            getInitial(user.name)
           )}
         </div>
         <div className="text-sm font-medium text-gray-800">
@@ -65,6 +68,7 @@ const UserProfile = ({ user, loading, error }) => {
           <Bell size={14} />
         </button>
         <button
+          onClick={() => router.push("/settings")}
           className="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors"
           title="Paramètres"
         >
