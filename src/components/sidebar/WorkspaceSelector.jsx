@@ -80,7 +80,7 @@ const WorkspaceSelector = ({
 
       {/* Dropdown des workspaces */}
       {isDropdownOpen && (
-        <div className="absolute z-10 w-full left-0 mt-1">
+        <div className="absolute z-10 w-60 left-0 mt-1">
           <div className="rounded-lg bg-white shadow-lg py-2 mx-1 border border-gray-100">
             <p className="text-xs text-gray-500 font-medium px-3 pb-2 mb-1">
               CHANGER D'ÉQUIPE

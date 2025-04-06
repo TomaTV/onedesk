@@ -4,36 +4,14 @@ import {
   updateChannel,
   deleteChannel,
 } from "@/lib/channels";
-import { isWorkspaceMember } from "@/lib/users";
-import { getUserWorkspaces } from "@/lib/workspaces";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-
-// Fonction utilitaire pour trouver un workspace par son nom
-async function findWorkspaceByName(workspaceName, userId) {
-  // Récupérer tous les workspaces de l'utilisateur
-  const userWorkspaces = await getUserWorkspaces(userId);
-
-  // Trouver le workspace par son nom (insensible à la casse)
-  const matchedWorkspace = userWorkspaces.find(
-    (w) => w.name.toLowerCase() === workspaceName.toLowerCase()
-  );
-
-  return matchedWorkspace;
-}
-
-// Fonction utilitaire pour trouver un channel par son nom dans un workspace
-async function findChannelByName(channelName, workspaceId) {
-  // Récupérer tous les channels du workspace
-  const channels = await getWorkspaceChannels(workspaceId);
-
-  // Trouver le channel par son nom (insensible à la casse)
-  const matchedChannel = channels.find(
-    (c) => c.name.toLowerCase() === channelName.toLowerCase()
-  );
-
-  return matchedChannel;
-}
+import { 
+  findWorkspaceByName, 
+  findChannelByName,
+  checkWorkspaceAccess,
+  validateChannelData
+} from "@/lib/utils/workspace-utils";
 
 // GET /api/workspaces/[workspace]/channels/[channel] - Récupère les détails d'un channel par son nom
 export async function GET(request, { params }) {
@@ -62,7 +40,7 @@ export async function GET(request, { params }) {
     }
 
     // Vérifier que l'utilisateur est membre du workspace
-    const isMember = await isWorkspaceMember(userId, workspace.id);
+    const isMember = await checkWorkspaceAccess(userId, workspace.id);
 
     if (!isMember) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -79,7 +57,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error("Error fetching channel:", error);
     return NextResponse.json(
-      { error: "Failed to fetch channel" },
+      { error: "Failed to fetch channel", details: error.message },
       { status: 500 }
     );
   }
@@ -113,8 +91,17 @@ export async function PATCH(request, { params }) {
       );
     }
 
+    // Validation améliorée
+    const validation = validateChannelData(body);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: "Validation failed", details: validation.errors },
+        { status: 400 }
+      );
+    }
+
     // Vérifier que l'utilisateur est membre du workspace
-    const isMember = await isWorkspaceMember(userId, workspace.id);
+    const isMember = await checkWorkspaceAccess(userId, workspace.id);
 
     if (!isMember) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -127,13 +114,20 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    const updatedChannel = await updateChannel(channel.id, body);
-
-    return NextResponse.json(updatedChannel);
+    try {
+      const updatedChannel = await updateChannel(channel.id, body);
+      return NextResponse.json(updatedChannel);
+    } catch (updateError) {
+      console.error("Error updating channel:", updateError);
+      return NextResponse.json(
+        { error: "Failed to update channel", details: updateError.message },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error("Error updating channel:", error);
+    console.error("Error in PATCH channel:", error);
     return NextResponse.json(
-      { error: "Failed to update channel" },
+      { error: "Failed to process request", details: error.message },
       { status: 500 }
     );
   }
@@ -166,7 +160,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Vérifier que l'utilisateur est membre du workspace
-    const isMember = await isWorkspaceMember(userId, workspace.id);
+    const isMember = await checkWorkspaceAccess(userId, workspace.id);
 
     if (!isMember) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -179,23 +173,34 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    const result = await deleteChannel(channel.id);
+    // Supprimer le channel avec notre fonction améliorée
+    try {
+      const result = await deleteChannel(channel.id);
 
-    if (!result) {
+      if (!result || !result.success) {
+        return NextResponse.json(
+          { error: "Failed to delete channel" },
+          { status: 500 }
+        );
+      }
+
+      // Retourner des informations sur les channels restants
+      return NextResponse.json({
+        message: "Channel deleted successfully",
+        remainingChannels: result.remainingChannels,
+        workspaceId: result.workspaceId
+      });
+    } catch (deleteError) {
+      console.error("Error during channel deletion:", deleteError);
       return NextResponse.json(
-        { error: "Failed to delete channel" },
-        { status: 404 }
+        { error: "Failed to delete channel", details: deleteError.message },
+        { status: 500 }
       );
     }
-
-    return NextResponse.json(
-      { message: "Channel deleted successfully" },
-      { status: 200 }
-    );
   } catch (error) {
     console.error("Error deleting channel:", error);
     return NextResponse.json(
-      { error: "Failed to delete channel" },
+      { error: "Failed to process request", details: error.message },
       { status: 500 }
     );
   }

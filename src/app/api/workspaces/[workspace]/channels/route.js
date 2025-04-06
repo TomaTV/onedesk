@@ -1,22 +1,12 @@
 import { NextResponse } from "next/server";
 import { getWorkspaceChannels, createChannel } from "@/lib/channels";
-import { isWorkspaceMember } from "@/lib/users";
-import { getUserWorkspaces } from "@/lib/workspaces";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-
-// Fonction utilitaire pour trouver un workspace par son nom
-async function findWorkspaceByName(workspaceName, userId) {
-  // Récupérer tous les workspaces de l'utilisateur
-  const userWorkspaces = await getUserWorkspaces(userId);
-
-  // Trouver le workspace par son nom (insensible à la casse)
-  const matchedWorkspace = userWorkspaces.find(
-    (w) => w.name.toLowerCase() === workspaceName.toLowerCase()
-  );
-
-  return matchedWorkspace;
-}
+import { 
+  findWorkspaceByName, 
+  checkWorkspaceAccess,
+  validateChannelData
+} from "@/lib/utils/workspace-utils";
 
 // GET /api/workspaces/[workspace]/channels - Récupère tous les channels d'un workspace par son nom
 export async function GET(request, { params }) {
@@ -33,7 +23,7 @@ export async function GET(request, { params }) {
     const userId = session.user.id;
     const workspaceName = decodeURIComponent(resolvedParams.workspace);
 
-    // Trouver le workspace par son nom
+    // Trouver le workspace par son nom (utilise la fonction d'utilitaire partagée)
     const workspace = await findWorkspaceByName(workspaceName, userId);
 
     if (!workspace) {
@@ -43,8 +33,8 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Vérifier que l'utilisateur est membre du workspace
-    const isMember = await isWorkspaceMember(userId, workspace.id);
+    // Vérifier que l'utilisateur est membre du workspace (utilise la fonction d'utilitaire partagée)
+    const isMember = await checkWorkspaceAccess(userId, workspace.id);
 
     if (!isMember) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -56,7 +46,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error("Error fetching channels:", error);
     return NextResponse.json(
-      { error: "Failed to fetch channels" },
+      { error: "Failed to fetch channels", details: error.message },
       { status: 500 }
     );
   }
@@ -79,7 +69,7 @@ export async function POST(request, { params }) {
     const userId = session.user.id;
     const workspaceName = decodeURIComponent(resolvedParams.workspace);
 
-    // Trouver le workspace par son nom
+    // Trouver le workspace par son nom (utilise la fonction d'utilitaire partagée)
     const workspace = await findWorkspaceByName(workspaceName, userId);
 
     if (!workspace) {
@@ -89,13 +79,17 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Validation de base
-    if (!body.name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    // Validation améliorée
+    const validation = validateChannelData(body);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: "Validation failed", details: validation.errors },
+        { status: 400 }
+      );
     }
 
-    // Vérifier que l'utilisateur est membre du workspace
-    const isMember = await isWorkspaceMember(userId, workspace.id);
+    // Vérifier que l'utilisateur est membre du workspace (utilise la fonction d'utilitaire partagée)
+    const isMember = await checkWorkspaceAccess(userId, workspace.id);
 
     if (!isMember) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -107,13 +101,20 @@ export async function POST(request, { params }) {
       createdBy: userId,
     };
 
-    const channel = await createChannel(channelData);
-
-    return NextResponse.json(channel, { status: 201 });
+    try {
+      const channel = await createChannel(channelData);
+      return NextResponse.json(channel, { status: 201 });
+    } catch (channelError) {
+      console.error("Error creating channel:", channelError);
+      return NextResponse.json(
+        { error: "Failed to create channel", details: channelError.message },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error("Error creating channel:", error);
+    console.error("Error in POST /api/workspaces/[workspace]/channels:", error);
     return NextResponse.json(
-      { error: "Failed to create channel" },
+      { error: "Failed to process request", details: error.message },
       { status: 500 }
     );
   }

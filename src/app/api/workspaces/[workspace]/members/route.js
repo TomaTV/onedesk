@@ -4,6 +4,7 @@ import { isWorkspaceAdmin, isWorkspaceMember, getUserByEmail } from '@/lib/users
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { getUserWorkspaces } from '@/lib/workspaces';
+import { getInvitationByToken } from '@/lib/invitations';
 
 // POST /api/workspaces/[workspace]/members - Ajoute un membre à un workspace
 export async function POST(request, { params }) {
@@ -21,11 +22,26 @@ export async function POST(request, { params }) {
     
     const currentUserId = session.user.id;
     
-    // Trouver le workspace par son nom
-    const userWorkspaces = await getUserWorkspaces(currentUserId);
-    const workspace = userWorkspaces.find(w => 
-      w.name.toLowerCase() === workspaceName.toLowerCase()
-    );
+    // Trouver le workspace par son nom - version améliorée pour les invitations
+    let workspace;
+    
+    // Si on a un jeton d'invitation, on récupère le workspace directement depuis l'invitation
+    if (body.inviteToken) {
+      const invitation = await getInvitationByToken(body.inviteToken);
+      if (invitation) {
+        // Obtenir les détails du workspace par l'ID trouvé dans l'invitation
+        const { getWorkspaceById } = require('@/lib/workspaces');
+        workspace = await getWorkspaceById(invitation.workspace_id);
+      }
+    }
+    
+    // Si on n'a pas trouvé le workspace par l'invitation, essayer de le trouver parmi ceux de l'utilisateur
+    if (!workspace) {
+      const userWorkspaces = await getUserWorkspaces(currentUserId);
+      workspace = userWorkspaces.find(w => 
+        w.name.toLowerCase() === workspaceName.toLowerCase()
+      );
+    }
     
     if (!workspace) {
       return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
@@ -33,8 +49,21 @@ export async function POST(request, { params }) {
     
     const workspaceId = workspace.id;
     
-    // Vérifier si l'utilisateur courant est admin (sauf s'il s'ajoute lui-même via une invitation)
-    if (body.userId !== currentUserId) {
+    // Vérifier si l'utilisateur a un token d'invitation valide
+    let hasInvitePermission = false;
+    
+    if (body.inviteToken) {
+      const invitation = await getInvitationByToken(body.inviteToken);
+      if (invitation && invitation.workspace_id === workspaceId) {
+        // Vérifier si l'invitation correspond à l'utilisateur connecté
+        if (invitation.email.toLowerCase() === session.user.email.toLowerCase()) {
+          hasInvitePermission = true;
+        }
+      }
+    }
+    
+    // Vérifier si l'utilisateur courant est admin (sauf s'il s'ajoute lui-même via une invitation valide)
+    if (!hasInvitePermission && body.userId !== currentUserId) {
       const isAdmin = await isWorkspaceAdmin(currentUserId, workspaceId);
       if (!isAdmin) {
         return NextResponse.json(

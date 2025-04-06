@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import Sidebar from "@/components/sidebar/Sidebar";
+import ErrorMessage from "@/components/ErrorMessage";
 
 export default function ChannelPage() {
   const { status } = useSession();
@@ -59,6 +60,11 @@ export default function ChannelPage() {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
     }
+    
+    // Réinitialiser l'indicateur de redirection lorsque la page est démontée
+    return () => {
+      isInitialLoad.current = true;
+    };
   }, [status, router]);
 
   // Forcer un rechargement complet lorsque l'URL change
@@ -83,7 +89,10 @@ export default function ChannelPage() {
   useEffect(() => {
     // Forcer un rechargement si l'URL ne correspond pas aux paramètres actuels
     if (status === "authenticated" && workspaceName && channelName) {
-      if (lastLoadedWorkspace && lastLoadedWorkspace !== workspaceName) {
+      // Vérifier si c'est le chargement initial (dans ce cas, ne pas recharger)
+      if (lastLoadedWorkspace && 
+          lastLoadedWorkspace !== workspaceName && 
+          !isInitialLoad.current) {
         console.log("Changement de workspace détecté, rechargement...");
         window.location.reload();
       }
@@ -110,8 +119,11 @@ export default function ChannelPage() {
           headers: { "Cache-Control": "no-cache" },
         });
 
-        if (!workspacesRes.ok)
-          throw new Error("Échec chargement des workspaces");
+        if (!workspacesRes.ok) {
+          setError("Impossible de récupérer les espaces de travail");
+          return;
+        }
+
         const workspacesData = await workspacesRes.json();
 
         // Trouver le workspace correspondant
@@ -120,7 +132,12 @@ export default function ChannelPage() {
           (w) => w.name.toLowerCase() === decodedWorkspace.toLowerCase()
         );
 
-        if (!matchedWorkspace) throw new Error("Workspace non trouvé");
+        if (!matchedWorkspace) {
+          setError(
+            `L'espace de travail "${decodedWorkspace}" n'existe pas ou vous n'y avez pas accès.`
+          );
+          return;
+        }
 
         // Mettre à jour l'état du workspace
         setWorkspace(matchedWorkspace);
@@ -137,7 +154,10 @@ export default function ChannelPage() {
           }
         );
 
-        if (!channelsRes.ok) throw new Error("Échec chargement des channels");
+        if (!channelsRes.ok) {
+          setError("Impossible de récupérer les canaux de cet espace.");
+          return;
+        }
 
         const channelsData = await channelsRes.json();
         setChannels(channelsData);
@@ -148,13 +168,25 @@ export default function ChannelPage() {
           (c) => c.name.toLowerCase() === decodedChannel.toLowerCase()
         );
 
-        if (!matchedChannel) throw new Error("Channel non trouvé");
+        if (!matchedChannel) {
+          setError(
+            `Le canal "${decodedChannel}" n'existe pas ou vous n'y avez pas accès.`
+          );
+          return;
+        }
 
         setChannel(matchedChannel);
+        // Marquer le chargement initial comme terminé
         isInitialLoad.current = false;
       } catch (err) {
-        console.error("Erreur:", err);
-        setError(err.message);
+        console.warn(
+          "Avertissement lors du chargement des données:",
+          err.message
+        );
+        // N'utiliser setError que si l'erreur n'a pas déjà été définie dans le code ci-dessus
+        if (!error) {
+          setError("Impossible de charger les données de ce canal.");
+        }
       } finally {
         setLoading(false);
         isLoadingRef.current = false;
@@ -187,17 +219,18 @@ export default function ChannelPage() {
           activeWorkspaceId={workspace?.id}
           activeChannelId={channel?.id}
         />
-        <div className="flex-1 p-8 flex items-center justify-center bg-white">
-          <div className="text-center">
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Erreur</h2>
-            <p className="text-red-500">{error}</p>
-            <button
-              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-              onClick={() => router.push("/")}
-            >
-              Retour à l'accueil
-            </button>
-          </div>
+        <div className="flex-1 bg-white">
+          <ErrorMessage
+            title="Channel non trouvé"
+            message={
+              error ||
+              "Le canal demandé n'existe pas ou vous n'y avez pas accès."
+            }
+            backButtonText={
+              workspace ? "Retour au workspace" : "Retour à l'accueil"
+            }
+            backUrl={workspace ? `/${encodeURIComponent(workspace.name)}` : "/"}
+          />
         </div>
       </div>
     );

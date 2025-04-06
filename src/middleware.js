@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+// Fonction de journalisation silencieuse pour les erreurs attendues
+function logDebug(message, data) {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Middleware] ${message}`, data || '');
+  }
+}
+
 // Stockage des demandes récentes pour limitation de débit
 const apiRequests = {};
 
@@ -15,6 +22,9 @@ export async function middleware(req) {
     "/api/auth/callback/google",
     "/api/auth/session",
     "/api/auth/csrf",
+    // Permettre l'accès à la page 404 et d'erreur
+    "/not-found",
+    "/error"
   ];
   
   const isPathPublic = publicPaths.some((publicPath) => 
@@ -43,7 +53,7 @@ export async function middleware(req) {
         
         // Bloquer seulement après 3 requêtes consécutives trop rapides
         if (request.count > 3) {
-          console.log(`Limitation de requête workspaces après ${request.count} appels rapides`); 
+          logDebug(`Limitation de requête workspaces après ${request.count} appels rapides`); 
           // Réutiliser le cache précédent, mais normaliser la réponse
           return NextResponse.next();
         }
@@ -82,6 +92,21 @@ export async function middleware(req) {
   
   // Si l'utilisateur n'est pas authentifié, rediriger vers la page de connexion
   if (!token) {
+    // Pour les requêtes API, renvoyer une erreur 401 plutôt qu'une redirection
+    if (path.startsWith('/api/')) {
+      return new NextResponse(
+        JSON.stringify({ 
+          error: "Unauthorized", 
+          message: "Vous devez être connecté pour accéder à cette ressource"
+        }),
+        { 
+          status: 401, 
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    // Pour les pages normales, rediriger vers la connexion
     const url = new URL("/auth/signin", req.url);
     url.searchParams.set("callbackUrl", encodeURI(req.url));
     return NextResponse.redirect(url);

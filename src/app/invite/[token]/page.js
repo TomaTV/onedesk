@@ -30,63 +30,59 @@ export default function InvitePage({ params }) {
         setIsLoading(true);
         
         try {
-          // Décoder le token pour obtenir le workspaceId
-          const decodedToken = atob(token);
-          const [workspaceId, timestamp] = decodedToken.split(':');
-          
-          // Si le token est trop ancien (plus de 7 jours)
-          const tokenDate = new Date(parseInt(timestamp));
-          const now = new Date();
-          const daysDifference = (now - tokenDate) / (1000 * 60 * 60 * 24);
-          
-          if (daysDifference > 7) {
-            setError("Cette invitation a expiré.");
-            setIsLoading(false);
-            return;
-          }
-          
-          // Obtenir les détails du workspace
-          const workspaceResponse = await fetch(`/api/workspaces/${workspaceId}`, {
+          // Vérifier les détails de l'invitation
+          const invitationResponse = await fetch(`/api/invitations/${token}`, {
             cache: 'no-store',
             method: "GET"
           });
-          if (!workspaceResponse.ok) {
-            throw new Error("Workspace not found");
+          
+          if (!invitationResponse.ok) {
+            const errorData = await invitationResponse.json();
+            throw new Error(errorData.error || "Invitation invalide ou expirée");
           }
           
-          const workspaceData = await workspaceResponse.json();
-          setInvitation(workspaceData);
+          const invitationData = await invitationResponse.json();
+          console.log('Détails de l\'invitation:', invitationData);
           
-          // Accepter l'invitation en utilisant le nom du workspace plutôt que l'ID
-          const acceptResponse = await fetch(`/api/workspaces/${encodeURIComponent(workspaceData.name)}/members`, {
+          // Accepter l'invitation en utilisant la nouvelle API
+          const acceptResponse = await fetch('/api/invitations/accept', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              userId: session.user.id,
-              role: 'member'
+              token: token
             }),
           });
           
           if (!acceptResponse.ok) {
             const errorData = await acceptResponse.json();
-            if (errorData.error === 'User is already a member') {
-              // L'utilisateur est déjà membre
-              router.push(`/`);
-              return;
-            }
-            throw new Error(errorData.error || "Failed to join workspace");
+            throw new Error(errorData.error || "Échec de l'acceptation de l'invitation");
           }
           
-          // Rediriger vers le workspace après quelques secondes
+          const acceptData = await acceptResponse.json();
+          console.log('Résultat de l\'acceptation:', acceptData);
+          
+          // Si l'utilisateur est déjà membre, rediriger vers le workspace
+          if (acceptData.alreadyMember) {
+            router.push(`/${encodeURIComponent(acceptData.workspace.name)}`);
+            return;
+          }
+          
+          // Préparer les données à afficher
+          setInvitation({
+            ...acceptData.workspace,
+            warning: acceptData.emailMatches ? null : acceptData.message
+          });
+          
+          // Rediriger vers le workspace après un court délai
           setTimeout(() => {
-            router.push('/');
-          }, 2000);
+            router.push(`/${encodeURIComponent(acceptData.workspace.name)}`);
+          }, 3000);
           
         } catch (err) {
           console.error('Error accepting invitation:', err);
-          setError("Invitation invalide ou expirée");
+          setError(err.message || "Invitation invalide ou expirée");
         }
         
         setIsLoading(false);
@@ -166,8 +162,13 @@ export default function InvitePage({ params }) {
           <br />
           Vous allez être redirigé automatiquement...
         </p>
+        {invitation?.warning && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+            <p className="text-yellow-700 text-sm">{invitation.warning}</p>
+          </div>
+        )}
         <button
-          onClick={() => router.push('/')}
+          onClick={() => router.push(`/${encodeURIComponent(invitation?.name)}`)}
           className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
         >
           Continuer

@@ -19,22 +19,25 @@ export const authOptions = {
           include_granted_scopes: "true",
           login_hint: "", // Laisser vide pour éviter que Google présélectionne un compte
           display: "popup",
-          hd: "etu-webschoolfactory.fr" // Restreint aux utilisateurs de ce domaine
-        }
-      }
+          // hd: "etu-webschoolfactory.fr", // Restreint aux utilisateurs de ce domaine
+        },
+      },
     }),
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
       // Vérifier que l'email se termine par @etu-webschoolfactory.fr
-      if (!user.email.endsWith("@etu-webschoolfactory.fr")) {
-        return false; // Refuser la connexion
+      if (
+        !user.email.endsWith("@etu-webschoolfactory.fr") &&
+        user.email !== "devulder.thomas2005@gmail.com"
+      ) {
+        return false; // Refuser la connexion si l'email n'est ni @etu-webschoolfactory.fr ni devulder.thomas2005@gmail.com
       }
 
       // Vérifier si l'utilisateur existe déjà dans notre base de données
       try {
         let dbUser = await getUserByEmail(user.email);
-        
+
         // Si l'utilisateur n'existe pas, le créer
         if (!dbUser) {
           dbUser = await createUser({
@@ -42,79 +45,111 @@ export const authOptions = {
             email: user.email,
             // Pas besoin de mot de passe pour l'authentification Google
             password: Math.random().toString(36).slice(-10), // Mot de passe aléatoire
-            avatar: user.image
+            avatar: user.image,
           });
-          
+
           // Créer un workspace par défaut pour le nouvel utilisateur
           if (dbUser) {
-            // Déterminer la première lettre pour le workspace
-            const firstLetter = user.name.charAt(0).toUpperCase();
-            
-            // Créer le workspace
-            const workspace = await createWorkspace({
-              name: `Espace de ${user.name.split(' ')[0]}`,
-              letter: firstLetter,
-              color: "from-indigo-500 to-indigo-600", // Couleur par défaut
-            }, dbUser.id);
-            
-            if (workspace) {
-              // Ajouter l'utilisateur comme admin du workspace (déjà géré par createWorkspace)
-              
-              // Créer un channel de bienvenue
-              await createChannel({
-                name: "Bienvenue",
-                type: "custom",
-                emoji: "👋", // 👋 = emoji main qui salue
-                workspaceId: workspace.id,
-                createdBy: dbUser.id
-              });
-              
-              // Créer un channel pour les notes
-              await createChannel({
-                name: "Notes",
-                type: "file",
-                workspaceId: workspace.id,
-                createdBy: dbUser.id
-              });
+            try {
+              // Déterminer la première lettre pour le workspace
+              const firstLetter = user.name.charAt(0).toUpperCase();
+
+              // Créer le workspace en gardant la connexion ouverte
+              const workspace = await createWorkspace(
+                {
+                  name: `Espace de ${user.name.split(" ")[0]}`,
+                  letter: firstLetter,
+                  color: "from-indigo-500 to-indigo-600", // Couleur par défaut
+                },
+                dbUser.id,
+                true // garder la connexion ouverte
+              );
+
+              if (workspace) {
+                console.log("Workspace créé avec succès, ID:", workspace.id);
+                
+                // Créer un channel de bienvenue en gardant la connexion ouverte
+                const bienvenue = await createChannel({
+                  name: "Bienvenue",
+                  type: "custom",
+                  emoji: "👋", // 👋 = emoji main qui salue
+                  workspaceId: workspace.id,
+                  createdBy: dbUser.id,
+                  keepConnectionOpen: true
+                });
+                
+                console.log("Channel Bienvenue créé avec succès, ID:", bienvenue?.id);
+
+                // Créer un channel pour les notes
+                const notes = await createChannel({
+                  name: "Notes",
+                  type: "file",
+                  workspaceId: workspace.id,
+                  createdBy: dbUser.id,
+                  keepConnectionOpen: false // dernier appel, on peut fermer la connexion
+                });
+                
+                console.log("Channel Notes créé avec succès, ID:", notes?.id);
+              }
+            } catch (error) {
+              console.error("Error creating default workspace and channels:", error);
+              // On continue même si la création échoue pour ne pas bloquer la connexion
             }
           }
         } else {
           // L'utilisateur existe déjà, vérifier s'il a des workspaces
           const workspaces = await getUserWorkspaces(dbUser.id);
-          
+
           // Si l'utilisateur n'a pas de workspace, en créer un par défaut
           if (workspaces.length === 0) {
-            // Déterminer la première lettre pour le workspace
-            const firstLetter = user.name.charAt(0).toUpperCase();
-            
-            // Créer le workspace
-            const workspace = await createWorkspace({
-              name: `Espace de ${user.name.split(' ')[0]}`,
-              letter: firstLetter,
-              color: "from-indigo-500 to-indigo-600", // Couleur par défaut
-            }, dbUser.id);
-            
-            if (workspace) {
-              // Créer un channel de bienvenue
-              await createChannel({
-                name: "Bienvenue",
-                type: "custom",
-                emoji: "👋", // 👋 = emoji main qui salue
-                workspaceId: workspace.id,
-                createdBy: dbUser.id
-              });
-              
-              // Créer un channel pour les notes
-              await createChannel({
-                name: "Notes",
-                type: "file",
-                workspaceId: workspace.id,
-                createdBy: dbUser.id
-              });
+            try {
+              // Déterminer la première lettre pour le workspace
+              const firstLetter = user.name.charAt(0).toUpperCase();
+
+              // Créer le workspace (garder la connexion ouverte pour les prochaines requêtes)
+              const workspace = await createWorkspace(
+                {
+                  name: `Espace de ${user.name.split(" ")[0]}`,
+                  letter: firstLetter,
+                  color: "from-indigo-500 to-indigo-600", // Couleur par défaut
+                },
+                dbUser.id,
+                true // garder la connexion ouverte
+              );
+
+              if (workspace) {
+                console.log("Workspace créé pour utilisateur existant, ID:", workspace.id);
+                
+                // Créer un channel de bienvenue
+                const bienvenue = await createChannel({
+                  name: "Bienvenue",
+                  type: "custom",
+                  emoji: "👋", // 👋 = emoji main qui salue
+                  workspaceId: workspace.id,
+                  createdBy: dbUser.id,
+                  keepConnectionOpen: true // garder la connexion ouverte
+                });
+                
+                console.log("Channel Bienvenue créé pour utilisateur existant, ID:", bienvenue?.id);
+
+                // Créer un channel pour les notes
+                const notes = await createChannel({
+                  name: "Notes",
+                  type: "file",
+                  workspaceId: workspace.id,
+                  createdBy: dbUser.id,
+                  keepConnectionOpen: false // dernier appel, fermer la connexion
+                });
+                
+                console.log("Channel Notes créé pour utilisateur existant, ID:", notes?.id);
+              }
+            } catch (error) {
+              console.error("Error creating default workspace for existing user:", error);
+              // On continue même si la création échoue
             }
           }
         }
-        
+
         return true; // Autoriser la connexion
       } catch (error) {
         console.error("Error during user verification/creation:", error);
@@ -140,8 +175,8 @@ export const authOptions = {
     },
   },
   pages: {
-    signIn: '/auth/signin', // Page de connexion personnalisée
-    error: '/auth/error', // Page d'erreur personnalisée
+    signIn: "/auth/signin", // Page de connexion personnalisée
+    error: "/auth/error", // Page d'erreur personnalisée
   },
   session: {
     strategy: "jwt", // Utiliser JWT pour les sessions

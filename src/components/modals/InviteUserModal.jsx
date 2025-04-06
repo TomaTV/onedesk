@@ -30,32 +30,32 @@ const InviteUserModal = ({ isOpen, onClose, workspace }) => {
     try {
       setIsSending(true);
 
-      // Générer le lien d'invitation
-      const baseUrl = window.location.origin;
-      const inviteToken = btoa(`${workspace.id}:${Date.now()}`);
-      const link = `${baseUrl}/invite/${inviteToken}`;
-      setInvitationLink(link);
+      // Appel API pour créer l'invitation
+      const response = await fetch('/api/invitations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          workspaceId: workspace.id
+        })
+      });
       
-      // Simuler l'envoi d'email - en production, ceci serait remplacé par un appel API
-      console.log(`Envoi d'invitation à ${email} pour rejoindre ${workspace.name}`);
-      console.log(`Lien d'invitation: ${link}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de la création de l\'invitation');
+      }
       
-      // Dans une application réelle, l'appel serait :
-      // await fetch('/api/invite/send', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ 
-      //     email, 
-      //     workspaceId: workspace.id,
-      //     inviteLink: link
-      //   })
-      // });
-
+      const data = await response.json();
+      setInvitationLink(data.link);
+      
+      console.log(`Invitation créée pour ${email} pour rejoindre ${workspace.name}`);
+      console.log(`Lien d'invitation: ${data.link}`);
+      
       // Réinitialiser l'email après envoi
       setEmail("");
     } catch (err) {
       console.error("Error sending invitation:", err);
-      setError("Erreur lors de l'envoi de l'invitation");
+      setError(err.message || "Erreur lors de l'envoi de l'invitation");
     } finally {
       setIsSending(false);
     }

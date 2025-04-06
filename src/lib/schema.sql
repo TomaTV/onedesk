@@ -28,6 +28,19 @@ CREATE TABLE IF NOT EXISTS workspaces (
   INDEX idx_workspace_created_by (created_by)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Table des invitations
+CREATE TABLE IF NOT EXISTS workspace_invitations (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  workspace_id INT NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 7 DAY),
+  FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+  INDEX idx_invitation_token (token),
+  INDEX idx_invitation_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table de relation workspace_members (membres des équipes)
 CREATE TABLE IF NOT EXISTS workspace_members (
   workspace_id INT NOT NULL,

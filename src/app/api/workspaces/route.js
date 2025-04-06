@@ -3,6 +3,8 @@ import { getUserWorkspaces, createWorkspace } from "@/lib/workspaces";
 import { createChannel } from "@/lib/channels";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { validateWorkspaceData } from "@/lib/utils/workspace-utils";
+import { executeTransaction } from "@/lib/db";
 
 // GET /api/workspaces - Récupère tous les workspaces d'un utilisateur
 export async function GET(request) {
@@ -26,7 +28,7 @@ export async function GET(request) {
   }
 }
 
-// POST /api/workspaces - Crée un nouveau workspace
+// POST /api/workspaces - Crée un nouveau workspace avec channels par défaut
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -37,48 +39,74 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Validation de base
-    if (!body.name || !body.letter || !body.color) {
+    // Validation améliorée
+    const validation = validateWorkspaceData(body);
+    if (!validation.valid) {
       return NextResponse.json(
-        { error: "Name, letter and color are required" },
+        { error: "Validation failed", details: validation.errors },
         { status: 400 }
       );
     }
 
     const userId = session.user.id;
 
-    // Créer le workspace
-    const workspace = await createWorkspace(body, userId);
-    
-    // Créer automatiquement un channel par défaut
-    if (workspace && workspace.id) {
-      try {
-        await createChannel({
-          name: "Général",
-          type: "custom",
-          emoji: "👋",
-          workspaceId: workspace.id,
-          createdBy: userId
-        });
+    try {
+      // Utiliser une transaction pour créer le workspace et ses channels par défaut
+      const operations = [
+        // 1. Créer le workspace
+        async (db) => {
+          // Créer le workspace (cette fonction gère sa propre transaction)
+          return await createWorkspace(body, userId);
+        },
         
-        // Optionnellement créer un deuxième channel
-        await createChannel({
-          name: "Documents",
-          type: "file",
-          workspaceId: workspace.id,
-          createdBy: userId
-        });
-      } catch (channelError) {
-        console.error("Error creating default channels:", channelError);
-        // On continue même si la création du channel échoue
-      }
-    }
+        // 2. Créer le channel "Général"
+        async (db, results) => {
+          const workspace = results[0];
+          if (!workspace || !workspace.id) {
+            throw new Error("Workspace creation failed");
+          }
+          
+          return await createChannel({
+            name: "Général",
+            type: "custom",
+            emoji: "👋", // 👋 = emoji main qui salue
+            workspaceId: workspace.id,
+            createdBy: userId
+          });
+        },
+        
+        // 3. Créer le channel "Documents"
+        async (db, results) => {
+          const workspace = results[0];
+          if (!workspace || !workspace.id) {
+            throw new Error("Workspace creation failed");
+          }
+          
+          return await createChannel({
+            name: "Documents",
+            type: "file",
+            workspaceId: workspace.id,
+            createdBy: userId
+          });
+        }
+      ];
 
-    return NextResponse.json(workspace, { status: 201 });
+      // Exécuter la transaction
+      const results = await executeTransaction(operations);
+      const workspace = results[0]; // Le workspace est retourné par la première opération
+
+      return NextResponse.json(workspace, { status: 201 });
+    } catch (error) {
+      console.error("Transaction error:", error);
+      return NextResponse.json(
+        { error: "Failed to create workspace and channels", details: error.message },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error("Error creating workspace:", error);
+    console.error("Error in POST /api/workspaces:", error);
     return NextResponse.json(
-      { error: "Failed to create workspace" },
+      { error: "Failed to process request", details: error.message },
       { status: 500 }
     );
   }
