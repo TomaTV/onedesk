@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function SignIn() {
   const [error, setError] = useState("");
@@ -37,6 +38,12 @@ export default function SignIn() {
             height={48}
             className="max-w-full h-auto"
           />
+        </div>
+        
+        <div className="mt-3 text-center">
+          <Link href="/landing" className="text-indigo-600 hover:text-indigo-800 text-sm">
+            Découvrir OneDesk
+          </Link>
         </div>
 
         {/* Error message with improved styling */}
