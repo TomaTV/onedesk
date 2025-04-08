@@ -1,10 +1,9 @@
 import { executeQuery } from "./db";
 
 // Récupère tous les workspaces d'un utilisateur
-
 export async function getUserWorkspaces(userId, keepConnectionOpen = false) {
   const query = `
-    SELECT w.* 
+    SELECT w.*, wm.role 
     FROM workspaces w
     INNER JOIN workspace_members wm ON w.id = wm.workspace_id
     WHERE wm.user_id = ?
@@ -259,8 +258,42 @@ export async function addWorkspaceMember(workspaceId, userId, role = "member") {
   });
 }
 
-//  Supprime un membre d'un workspace
-export async function removeWorkspaceMember(workspaceId, userId) {
+// Quitter un workspace (pour les membres non-admin)
+export async function leaveWorkspace(workspaceId, userId) {
+  // Vérifier d'abord le nombre total de membres admin
+  const countAdminsQuery = `
+    SELECT COUNT(*) as count
+    FROM workspace_members
+    WHERE workspace_id = ? AND role = 'admin'
+  `;
+
+  const adminCountResult = await executeQuery({
+    query: countAdminsQuery,
+    values: [workspaceId],
+  });
+
+  // Vérifier si l'utilisateur est le seul admin
+  const isAdminQuery = `
+    SELECT role
+    FROM workspace_members
+    WHERE workspace_id = ? AND user_id = ?
+  `;
+
+  const userRoleResult = await executeQuery({
+    query: isAdminQuery,
+    values: [workspaceId, userId],
+  });
+
+  // Si l'utilisateur est admin et c'est le seul admin, empêcher de quitter
+  if (
+    userRoleResult.length > 0 &&
+    userRoleResult[0].role === 'admin' &&
+    adminCountResult[0].count <= 1
+  ) {
+    throw new Error("You cannot leave this workspace as you are the only admin");
+  }
+
+  // Supprimer l'utilisateur des membres du workspace
   const query = `
     DELETE FROM workspace_members 
     WHERE workspace_id = ? AND user_id = ?

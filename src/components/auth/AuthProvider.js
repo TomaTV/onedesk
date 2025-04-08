@@ -1,6 +1,14 @@
 "use client";
 import { SessionProvider } from "next-auth/react";
+import PermissionFixer from "./PermissionFixer";
 
-export default function AuthProvider({ children }) {
-  return <SessionProvider>{children}</SessionProvider>;
-}
+const AuthProvider = ({ children }) => {
+  return (
+    <SessionProvider>
+      <PermissionFixer />
+      {children}
+    </SessionProvider>
+  );
+};
+
+export default AuthProvider;

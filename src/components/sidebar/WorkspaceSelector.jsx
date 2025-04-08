@@ -7,7 +7,9 @@ import {
   EllipsisVertical,
   Trash2,
   UserPlus,
+  LogOut,
 } from "lucide-react";
+import { leaveWorkspace } from "@/lib/services/workspaceService";
 
 const WorkspaceSelector = ({
   workspaces,
@@ -22,7 +24,12 @@ const WorkspaceSelector = ({
   onEditWorkspace,
   onCreateWorkspace,
   onDeleteWorkspace,
+  onLeaveWorkspace = () => {
+    console.warn('No leave workspace handler provided');
+    alert('Cette fonctionnalité n\'est pas disponible actuellement.');
+  },
   onInviteUser,
+  adminWorkspaces = [],
 }) => {
   // Trouver le workspace actif
   const activeWorkspaceData = workspaces.find((w) => w.id === activeWorkspace);
@@ -113,20 +120,42 @@ const WorkspaceSelector = ({
 
                     {hoveredWorkspace === workspace.id && (
                       <div className="flex items-center space-x-1">
-                        <button
-                          className="p-1 rounded-md hover:bg-gray-200 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEditWorkspace(workspace);
-                          }}
-                          title="Modifier l'équipe"
-                        >
-                          <EllipsisVertical
-                            size={14}
-                            className="text-gray-500"
-                          />
-                        </button>
+                        {console.log(`Workspace ${workspace.id} - Role: ${workspace.role} - Is in adminWorkspaces: ${adminWorkspaces.includes(workspace.id)}`)}
+                        
+                        {/* Boutons d'administration - affichés si l'utilisateur est admin */}
+                        {workspace.role === 'admin' && (
+                          <>
+                            <button
+                              className="p-1 rounded-md hover:bg-gray-200 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEditWorkspace(workspace);
+                              }}
+                              title="Modifier l'équipe"
+                            >
+                              <EllipsisVertical
+                                size={14}
+                                className="text-gray-500"
+                              />
+                            </button>
 
+                            {/* Supprimer est visible s'il y a plus d'un workspace */}
+                            {workspaces.length > 1 && (
+                              <button
+                                className="p-1 rounded-md hover:bg-gray-200 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteWorkspace(workspace.id);
+                                }}
+                                title="Supprimer l'équipe"
+                              >
+                                <Trash2 size={14} className="text-gray-500" />
+                              </button>
+                            )}
+                          </>
+                        )}
+
+                        {/* Le bouton d'invitation est toujours visible */}
                         <button
                           className="p-1 rounded-md hover:bg-gray-200 transition-colors"
                           onClick={(e) => {
@@ -137,17 +166,27 @@ const WorkspaceSelector = ({
                         >
                           <UserPlus size={14} className="text-gray-500" />
                         </button>
-
-                        {workspaces.length > 1 && (
+                        
+                        {/* Bouton pour quitter le workspace (uniquement pour les membres) */}
+                        {workspace.role === 'member' && (
                           <button
                             className="p-1 rounded-md hover:bg-gray-200 transition-colors"
-                            onClick={(e) => {
+                            onClick={async (e) => {
                               e.stopPropagation();
-                              onDeleteWorkspace(workspace.id);
+                              if (window.confirm(`Êtes-vous sûr de vouloir quitter l'espace "${workspace.name}" ?`)) {
+                                try {
+                                  await leaveWorkspace(workspace.id);
+                                  // Recharger la page pour récupérer les modifications
+                                  window.location.href = '/';
+                                } catch (error) {
+                                  console.error('Erreur lors de la sortie du workspace:', error);
+                                  alert(error.message || "Erreur lors de la sortie du workspace");
+                                }
+                              }
                             }}
-                            title="Supprimer l'équipe"
+                            title="Quitter l'équipe"
                           >
-                            <Trash2 size={14} className="text-gray-500" />
+                            <LogOut size={14} className="text-gray-500" />
                           </button>
                         )}
                       </div>
