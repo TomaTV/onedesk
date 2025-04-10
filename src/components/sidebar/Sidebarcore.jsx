@@ -102,24 +102,67 @@ const SidebarCore = ({ activeWorkspaceId, activeChannelId }) => {
 
   // Fonction pour récupérer les channels d'un workspace
   const fetchChannels = async (workspaceId, workspacesData = null) => {
-    if (!workspaceId) return Promise.resolve([]);
+    if (!workspaceId) {
+      console.warn("fetchChannels: workspaceId est null ou undefined");
+      return Promise.resolve([]);
+    }
 
     try {
       setLoading((prev) => ({ ...prev, channels: true }));
+      setError((prev) => ({ ...prev, channels: null })); // Réinitialiser l'erreur au début
 
       // Utiliser workspacesData si fourni, sinon workspaces
       const wsData = workspacesData || workspaces;
+      if (!wsData || wsData.length === 0) {
+        console.warn("fetchChannels: workspaces data est vide");
+        const fallbackWorkspaces = await (await fetch("/api/workspaces", { cache: "no-store" })).json();
+        console.log("Workspaces récupérés en fallback:", fallbackWorkspaces);
+        const targetWorkspace = fallbackWorkspaces.find((w) => w.id === workspaceId);
+        if (targetWorkspace) {
+          return await fetchChannelsWithWorkspace(targetWorkspace, workspaceId);
+        }
+        throw new Error("Impossible de trouver les données du workspace");
+      }
+
       const workspaceObj = wsData.find((w) => w.id === workspaceId);
 
-      if (!workspaceObj || !workspaceObj.name) {
+      if (!workspaceObj) {
+        console.warn(`Workspace avec ID ${workspaceId} introuvable dans la liste:`, wsData);
         throw new Error(`Workspace ${workspaceId} introuvable`);
       }
 
-      console.log(`Chargement des channels pour: ${workspaceObj.name}`);
+      if (!workspaceObj.name) {
+        console.warn(`Le workspace ${workspaceId} n'a pas de nom:`, workspaceObj);
+        throw new Error(`Workspace ${workspaceId} n'a pas de nom`);
+      }
 
+      return await fetchChannelsWithWorkspace(workspaceObj, workspaceId);
+    } catch (err) {
+      console.error(`Erreur channels pour ${workspaceId}:`, err);
+      setError((prev) => ({ ...prev, channels: err.message }));
+      setLoading((prev) => ({ ...prev, channels: false }));
+      // Retourner un tableau vide au lieu de rejeter la promesse
+      // pour éviter des erreurs en cascade
+      return [];
+    }
+  };
+
+  // Fonction helper pour récupérer les channels une fois qu'on a un workspace valide
+  const fetchChannelsWithWorkspace = async (workspaceObj, workspaceId) => {
+    try {
+      console.log(`Chargement des channels pour: ${workspaceObj.name} (ID: ${workspaceId})`);
+
+      const cacheBuster = Date.now(); // Ajouter un paramètre pour éviter le cache navigateur
       const response = await fetch(
-        `/api/workspaces/${encodeURIComponent(workspaceObj.name)}/channels`,
-        { cache: "no-store" }
+        `/api/workspaces/${encodeURIComponent(workspaceObj.name)}/channels?t=${cacheBuster}`,
+        { 
+          cache: "no-store",
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          } 
+        }
       );
 
       if (!response.ok) {
@@ -127,6 +170,7 @@ const SidebarCore = ({ activeWorkspaceId, activeChannelId }) => {
       }
 
       const data = await response.json();
+      console.log(`${data.length} channels récupérés pour ${workspaceObj.name}:`, data);
 
       // Mise à jour du cache des channels
       setChannels((prev) => ({
@@ -137,10 +181,8 @@ const SidebarCore = ({ activeWorkspaceId, activeChannelId }) => {
       setLoading((prev) => ({ ...prev, channels: false }));
       return data;
     } catch (err) {
-      console.error(`Erreur channels pour ${workspaceId}:`, err);
-      setError((prev) => ({ ...prev, channels: err.message }));
-      setLoading((prev) => ({ ...prev, channels: false }));
-      return Promise.reject(err);
+      console.error(`Erreur fetchChannelsWithWorkspace:`, err);
+      throw err; // Propager l'erreur à fetchChannels pour traitement
     }
   };
 
@@ -287,13 +329,15 @@ const SidebarCore = ({ activeWorkspaceId, activeChannelId }) => {
   // Charger les channels lorsque le workspace actif change
   useEffect(() => {
     if (activeWorkspace) {
-      // Vérifier si les channels sont déjà en cache
-      if (
-        !channels[activeWorkspace] ||
-        channels[activeWorkspace].length === 0
-      ) {
+      // Toujours recharger les channels pour s'assurer qu'ils sont à jour
+      // même si nous les avons déjà dans le cache
+      console.log("Chargement forcé des channels pour workspace ID:", activeWorkspace);
+      // Ajouter un petit délai pour éviter les problèmes de rendu
+      const timer = setTimeout(() => {
         fetchChannels(activeWorkspace);
-      }
+      }, 200);
+      
+      return () => clearTimeout(timer);
     }
   }, [activeWorkspace]);
 

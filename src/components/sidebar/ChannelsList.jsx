@@ -15,6 +15,14 @@ const ChannelsList = ({
   openChannelModal,
   handleDeleteChannel,
 }) => {
+  // Ajout de console.log pour déboguer l'affichage des channels
+  console.log("ChannelsList - activeWorkspace:", activeWorkspace);
+  console.log("ChannelsList - channels disponibles:", channels);
+  
+  // Vérifier spécifiquement les channels pour le workspace actif
+  if (activeWorkspace) {
+    console.log(`Channels pour workspace ${activeWorkspace}:`, channels[activeWorkspace]);
+  }
   return (
     <div className="mt-5 px-4">
       <div className="flex items-center justify-between px-2 py-2">
@@ -39,13 +47,13 @@ const ChannelsList = ({
           <div className="flex items-center justify-center p-4 text-red-500">
             <span className="text-sm">Erreur de chargement</span>
           </div>
-        ) : activeWorkspace && channels[activeWorkspace]?.length === 0 ? (
+        ) : activeWorkspace && Array.isArray(channels[activeWorkspace]) && channels[activeWorkspace].length === 0 ? (
           <div className="flex items-center justify-center p-4">
             <span className="text-sm text-gray-500">
               Aucun espace de travail
             </span>
           </div>
-        ) : activeWorkspace && channels[activeWorkspace] ? (
+        ) : activeWorkspace && Array.isArray(channels[activeWorkspace]) ? (
           // Afficher les channels
           channels[activeWorkspace].map((channel) => (
             <div key={channel.id} className="group relative">

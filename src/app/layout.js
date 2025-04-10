@@ -14,8 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "OneDesk - La plateforme de collaboration Utime",
-  description: "Plateforme de collaboration et de gestion de projet",
+  title: "OneDesk - Votre espace de travail collaboratif",
+  description:
+    "Plateforme de collaboration et de gestion de projet tout-en-un. OneDesk réunit communication en temps réel, organisation des documents et gestion de projet.",
+  keywords: "collaboration, plateforme, projet, équipe, chat, documents",
 };
 
 export default function RootLayout({ children }) {
@@ -25,9 +27,7 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
+          <ErrorBoundary>{children}</ErrorBoundary>
         </AuthProvider>
       </body>
     </html>

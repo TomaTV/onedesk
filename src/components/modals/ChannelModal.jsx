@@ -1,11 +1,12 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { X, Smile } from "lucide-react";
+import { X, Smile, MessageSquare, Layout, Calendar } from "lucide-react";
 import EmojiPicker from "@/components/EmojiPicker";
 
 const ChannelModal = ({ channel, workspaceId, isOpen, onClose, onSave }) => {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
+  const [type, setType] = useState("discussion");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -16,9 +17,11 @@ const ChannelModal = ({ channel, workspaceId, isOpen, onClose, onSave }) => {
     if (channel) {
       setName(channel.name || "");
       setIcon(channel.emoji || "");
+      setType(channel.type || "discussion");
     } else {
       setName("");
       setIcon("");
+      setType("discussion");
     }
   }, [channel, isOpen]);
 
@@ -59,8 +62,7 @@ const ChannelModal = ({ channel, workspaceId, isOpen, onClose, onSave }) => {
     try {
       setIsSubmitting(true);
 
-      // Déterminer le type en fonction de l'icône
-      const type = icon ? "custom" : "file";
+      // Utiliser le type sélectionné
 
       await onSave({
         ...channel,
@@ -124,12 +126,46 @@ const ChannelModal = ({ channel, workspaceId, isOpen, onClose, onSave }) => {
             />
           </div>
 
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-800 mb-1">
+              Type d'espace
+            </label>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setType("discussion")}
+                className={`flex flex-col items-center p-3 rounded-md border ${type === "discussion" ? "border-indigo-500 bg-indigo-50" : "border-gray-300"}`}
+              >
+                <MessageSquare className={`h-5 w-5 mb-1 ${type === "discussion" ? "text-indigo-600" : "text-gray-500"}`} />
+                <span className={`text-sm ${type === "discussion" ? "text-indigo-600 font-medium" : "text-gray-700"}`}>Discussion</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setType("tableau")}
+                className={`flex flex-col items-center p-3 rounded-md border ${type === "tableau" ? "border-indigo-500 bg-indigo-50" : "border-gray-300"}`}
+              >
+                <Layout className={`h-5 w-5 mb-1 ${type === "tableau" ? "text-indigo-600" : "text-gray-500"}`} />
+                <span className={`text-sm ${type === "tableau" ? "text-indigo-600 font-medium" : "text-gray-700"}`}>Tableau blanc</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setType("projet")}
+                className={`flex flex-col items-center p-3 rounded-md border ${type === "projet" ? "border-indigo-500 bg-indigo-50" : "border-gray-300"}`}
+              >
+                <Calendar className={`h-5 w-5 mb-1 ${type === "projet" ? "text-indigo-600" : "text-gray-500"}`} />
+                <span className={`text-sm ${type === "projet" ? "text-indigo-600 font-medium" : "text-gray-700"}`}>Projet</span>
+              </button>
+            </div>
+          </div>
+          
           <div className="mb-6">
             <label
               htmlFor="icon"
               className="block text-sm font-medium text-gray-800 mb-1"
             >
-              Icône (lettre ou emoji)
+              Icône (optionnel)
             </label>
             <div className="flex items-center mb-2">
               <div className="flex-grow flex space-x-2">
@@ -166,7 +202,7 @@ const ChannelModal = ({ channel, workspaceId, isOpen, onClose, onSave }) => {
             )}
 
             <p className="text-xs text-gray-600">
-              Laissez vide pour utiliser l'icône de fichier par défaut
+              Ajoutez un emoji pour personnaliser votre espace de travail
             </p>
           </div>
 

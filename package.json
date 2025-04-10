@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "framer-motion": "^12.6.3",
     "lucide-react": "^0.487.0",
     "mysql2": "^3.9.1",
     "next": "15.2.4",

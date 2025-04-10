@@ -27,7 +27,7 @@ export default function NotFoundPage() {
             La page que vous recherchez n'existe pas ou a été déplacée.
           </p>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 justify-center">
           <button
             onClick={() => router.back()}
@@ -36,7 +36,7 @@ export default function NotFoundPage() {
             <ArrowLeft size={16} className="mr-2" />
             Retour
           </button>
-          
+
           <button
             onClick={() => router.push("/")}
             className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"

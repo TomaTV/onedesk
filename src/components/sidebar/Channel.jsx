@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { File, EllipsisVertical, Trash2 } from "lucide-react";
+import { File, EllipsisVertical, Trash2, MessageSquare, Layout, Calendar } from "lucide-react";
 
 const Channel = ({
   channel,
@@ -33,19 +33,21 @@ const Channel = ({
     >
       <div className="flex items-center gap-2 flex-grow">
         {channel.emoji ? (
-          isNaN(channel.emoji) && channel.emoji.length === 1 ? (
-            // Si c'est une lettre (et non un emoji)
-            <div className="w-5 h-5 rounded-md bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white text-xs font-medium">
-              {channel.emoji}
-            </div>
-          ) : (
-            // Si c'est un emoji
-            <span className="text-sm w-5 flex justify-center">
-              {channel.emoji}
-            </span>
-          )
+          // Si un emoji est défini, l'afficher en priorité
+          <span className="text-sm w-5 flex justify-center">
+            {channel.emoji}
+          </span>
         ) : (
-          <File size={16} className="text-gray-500 w-5 flex justify-center" />
+          // Sinon, afficher une icône selon le type de channel
+          channel.type === "discussion" ? (
+            <MessageSquare size={16} className="text-indigo-500 w-5 flex justify-center" />
+          ) : channel.type === "tableau" ? (
+            <Layout size={16} className="text-purple-500 w-5 flex justify-center" />
+          ) : channel.type === "projet" ? (
+            <Calendar size={16} className="text-green-500 w-5 flex justify-center" />
+          ) : (
+            <File size={16} className="text-gray-500 w-5 flex justify-center" />
+          )
         )}
         <span className="text-sm truncate font-medium">{channel.name}</span>
       </div>

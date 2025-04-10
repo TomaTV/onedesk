@@ -28,24 +28,42 @@ const UserProfile = ({ user, loading, error, onWorkspacesUpdated }) => {
   // État pour l'animation de notification
   const [newInvitationAlert, setNewInvitationAlert] = useState(false);
 
-  // Charger les invitations en attente
+  // Charger les invitations en attente avec un mécanisme de cache
   useEffect(() => {
     if (!user) return;
     
+    // Variable pour suivre si le composant est monté
+    let isMounted = true;
+    // Mécanisme anti-rebond pour éviter les appels successifs trop rapides
+    let lastFetch = 0;
+
     const fetchInvitations = async () => {
+      // Vérifier si le temps minimum entre les requêtes est respecté (1 seconde)
+      const now = Date.now();
+      if (now - lastFetch < 1000) return;
+      lastFetch = now;
+      
       try {
-        const pendingInvitations = await getUserInvitations(user.email);
+        // Ajouter un paramètre cache-buster avec timestamp en millisecondes - 1 minute
+        // Cela permet de mettre en cache les réponses pendant 1 minute au niveau du navigateur
+        const cacheBuster = Math.floor(now / 60000);
+        const pendingInvitations = await getUserInvitations(user.email, cacheBuster);
         
-        // Si de nouvelles invitations sont arrivées et que ce n'est pas le premier chargement
+        // Si le composant n'est plus monté, ne pas mettre à jour l'état
+        if (!isMounted) return;
+        
+        // Si de nouvelles invitations sont arrivées et ce n'est pas le premier chargement
         if (invitations.length > 0 && pendingInvitations.length > invitations.length) {
           // Déclencher l'animation de notification
           setNewInvitationAlert(true);
           
           // Réinitialiser après 3 secondes
           setTimeout(() => {
-            setNewInvitationAlert(false);
-            // Ouvrir automatiquement la liste d'invitations
-            setShowInvitations(true);
+            if (isMounted) {
+              setNewInvitationAlert(false);
+              // Ouvrir automatiquement la liste d'invitations
+              setShowInvitations(true);
+            }
           }, 3000);
         }
         
@@ -58,11 +76,14 @@ const UserProfile = ({ user, loading, error, onWorkspacesUpdated }) => {
     // Charger immédiatement au début
     fetchInvitations();
     
-    // Rafraîchir les invitations toutes les 10 secondes pour une réactivité accrue
-    const intervalId = setInterval(fetchInvitations, 10000);
+    // Rafraîchir les invitations toutes les 60 secondes au lieu de 10
+    const intervalId = setInterval(fetchInvitations, 60000);
     
-    return () => clearInterval(intervalId);
-  }, [user, invitations.length]);
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [user]);  // Supprimer la dépendance à invitations.length pour éviter des appels en cascade
 
   // Gérer l'acceptation d'une invitation
   const handleAcceptInvitation = async (token) => {

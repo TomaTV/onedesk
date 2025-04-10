@@ -71,7 +71,7 @@ export const authOptions = {
                 // Créer un channel de bienvenue en gardant la connexion ouverte
                 const bienvenue = await createChannel({
                   name: "Bienvenue",
-                  type: "custom",
+                  type: "discussion",
                   emoji: "👋", // 👋 = emoji main qui salue
                   workspaceId: workspace.id,
                   createdBy: dbUser.id,
@@ -83,7 +83,7 @@ export const authOptions = {
                 // Créer un channel pour les notes
                 const notes = await createChannel({
                   name: "Notes",
-                  type: "file",
+                  type: "tableau",
                   workspaceId: workspace.id,
                   createdBy: dbUser.id,
                   keepConnectionOpen: false // dernier appel, on peut fermer la connexion
@@ -123,7 +123,7 @@ export const authOptions = {
                 // Créer un channel de bienvenue
                 const bienvenue = await createChannel({
                   name: "Bienvenue",
-                  type: "custom",
+                  type: "discussion",
                   emoji: "👋", // 👋 = emoji main qui salue
                   workspaceId: workspace.id,
                   createdBy: dbUser.id,
@@ -135,7 +135,7 @@ export const authOptions = {
                 // Créer un channel pour les notes
                 const notes = await createChannel({
                   name: "Notes",
-                  type: "file",
+                  type: "tableau",
                   workspaceId: workspace.id,
                   createdBy: dbUser.id,
                   keepConnectionOpen: false // dernier appel, fermer la connexion

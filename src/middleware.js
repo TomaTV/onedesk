@@ -27,6 +27,7 @@ export async function middleware(req) {
     "/error",
     // Permettre l'accès à la landing page
     "/landing",
+    "/favicon.ico",
   ];
 
   const isPathPublic = publicPaths.some(

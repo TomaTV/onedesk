@@ -151,14 +151,11 @@ export function validateChannelData(channelData) {
   }
   
   // Validation du type (si fourni)
-  if (channelData.type && !["file", "custom"].includes(channelData.type)) {
+  if (channelData.type && !["discussion", "tableau", "projet"].includes(channelData.type)) {
     errors.push("Type de channel invalide");
   }
   
-  // Validation de l'emoji (si type custom)
-  if (channelData.type === "custom" && !channelData.emoji) {
-    errors.push("Un emoji est requis pour les canaux de type personnalisé");
-  }
+  // L'emoji est optionnel pour tous les types de channels, il n'est plus requis
   
   return {
     valid: errors.length === 0,

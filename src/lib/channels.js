@@ -83,7 +83,7 @@ export async function createChannel({
 
         const result = await db.query(query, [
           name, 
-          type || "file", // Valeur par défaut si non fournie
+          type || "discussion", // Valeur par défaut si non fournie
           emoji || null, 
           workspaceId, 
           nextPosition, 

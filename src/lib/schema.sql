@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS workspace_members (
 CREATE TABLE IF NOT EXISTS channels (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
-  type VARCHAR(50) DEFAULT 'file',
+  type ENUM('discussion', 'tableau', 'projet') DEFAULT 'discussion',
   emoji VARCHAR(10) DEFAULT NULL,
   workspace_id INT NOT NULL,
   position INT NOT NULL DEFAULT 0,
@@ -89,13 +89,13 @@ INSERT INTO workspace_members (workspace_id, user_id, role) VALUES
 
 -- Ajouter des channels de test
 INSERT INTO channels (name, type, emoji, workspace_id, position, created_by) VALUES
-('Stratégie marketing', 'file', NULL, 1, 1, 1),
-('Campagnes', 'file', NULL, 1, 2, 1),
-('Réseaux sociaux', 'custom', '🌐', 1, 3, 1),
-('UI Elements', 'file', NULL, 2, 1, 1),
-('Brand Guidelines', 'custom', '🎨', 2, 2, 1),
-('Projets Clients', 'file', NULL, 3, 1, 1),
-('Planning', 'custom', '🗓️', 3, 2, 1);
+('Stratégie marketing', 'discussion', NULL, 1, 1, 1),
+('Campagnes', 'projet', NULL, 1, 2, 1),
+('Réseaux sociaux', 'discussion', '🌐', 1, 3, 1),
+('UI Elements', 'tableau', NULL, 2, 1, 1),
+('Brand Guidelines', 'discussion', '🎨', 2, 2, 1),
+('Projets Clients', 'projet', NULL, 3, 1, 1),
+('Planning', 'tableau', '🗓️', 3, 2, 1);
 
 -- Réactiver les contraintes
 SET FOREIGN_KEY_CHECKS = 1;
