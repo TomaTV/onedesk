@@ -7,6 +7,22 @@ import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import Sidebar from "@/components/sidebar/Sidebar";
 import ErrorMessage from "@/components/ErrorMessage";
+import ChannelChat from "@/components/chat/ChannelChat";
+import dynamic from "next/dynamic";
+
+// Importer dynamiquement le composant de chat pour éviter les erreurs de socket.io côté serveur
+const DynamicChannelChat = dynamic(
+  () => import("@/components/chat/ChannelChat"),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        <span className="ml-2 text-gray-500">Chargement du chat...</span>
+      </div>
+    ),
+    ssr: false, // Désactiver le SSR pour ce composant
+  }
+);
 
 export default function ChannelPage() {
   const { status } = useSession();
@@ -244,15 +260,54 @@ export default function ChannelPage() {
         activeChannelId={channel?.id}
       />
 
-      <div className="flex-1 p-8 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4 text-black">
-            {channel?.name || "Chargement..."}
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Espace de travail dans <strong>{workspace?.name || ""}</strong>
-          </p>
-        </div>
+      <div className="flex-1 flex flex-col h-screen bg-white">
+        {/* Afficher différents types de contenu selon le type de channel */}
+        {channel?.type === "discussion" ? (
+          <DynamicChannelChat channel={channel} workspace={workspace} />
+        ) : channel?.type === "tableau" ? (
+          <div className="p-8">
+            <div className="max-w-4xl mx-auto">
+              <h1 className="text-2xl font-bold mb-4 text-black">
+                Tableau: {channel?.name || "Chargement..."}
+              </h1>
+              <p className="text-gray-600 mb-6">
+                Espace de travail dans <strong>{workspace?.name || ""}</strong>
+              </p>
+              <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-center text-gray-500">
+                  Fonctionnalité de tableau à venir dans une future mise à jour.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : channel?.type === "projet" ? (
+          <div className="p-8">
+            <div className="max-w-4xl mx-auto">
+              <h1 className="text-2xl font-bold mb-4 text-black">
+                Projet: {channel?.name || "Chargement..."}
+              </h1>
+              <p className="text-gray-600 mb-6">
+                Espace de travail dans <strong>{workspace?.name || ""}</strong>
+              </p>
+              <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-center text-gray-500">
+                  Fonctionnalité de gestion de projet à venir dans une future mise à jour.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-8">
+            <div className="max-w-4xl mx-auto">
+              <h1 className="text-2xl font-bold mb-4 text-black">
+                {channel?.name || "Chargement..."}
+              </h1>
+              <p className="text-gray-600 mb-6">
+                Espace de travail dans <strong>{workspace?.name || ""}</strong>
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

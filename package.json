@@ -18,6 +18,9 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "serverless-mysql": "^1.5.5",
+    "socket.io": "^4.7.4",
+    "socket.io-client": "^4.7.4",
+    "date-fns": "^3.4.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
