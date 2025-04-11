@@ -130,34 +130,48 @@ const ChannelModal = ({ channel, workspaceId, isOpen, onClose, onSave }) => {
             <label className="block text-sm font-medium text-gray-800 mb-1">
               Type d'espace
             </label>
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              <button
-                type="button"
-                onClick={() => setType("discussion")}
-                className={`flex flex-col items-center p-3 rounded-md border ${type === "discussion" ? "border-indigo-500 bg-indigo-50" : "border-gray-300"}`}
-              >
-                <MessageSquare className={`h-5 w-5 mb-1 ${type === "discussion" ? "text-indigo-600" : "text-gray-500"}`} />
-                <span className={`text-sm ${type === "discussion" ? "text-indigo-600 font-medium" : "text-gray-700"}`}>Discussion</span>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setType("tableau")}
-                className={`flex flex-col items-center p-3 rounded-md border ${type === "tableau" ? "border-indigo-500 bg-indigo-50" : "border-gray-300"}`}
-              >
-                <Layout className={`h-5 w-5 mb-1 ${type === "tableau" ? "text-indigo-600" : "text-gray-500"}`} />
-                <span className={`text-sm ${type === "tableau" ? "text-indigo-600 font-medium" : "text-gray-700"}`}>Tableau blanc</span>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setType("projet")}
-                className={`flex flex-col items-center p-3 rounded-md border ${type === "projet" ? "border-indigo-500 bg-indigo-50" : "border-gray-300"}`}
-              >
-                <Calendar className={`h-5 w-5 mb-1 ${type === "projet" ? "text-indigo-600" : "text-gray-500"}`} />
-                <span className={`text-sm ${type === "projet" ? "text-indigo-600 font-medium" : "text-gray-700"}`}>Projet</span>
-              </button>
-            </div>
+            {channel ? (
+              <div className="p-3 border border-gray-200 rounded-md bg-gray-50 mb-4">
+                <div className="flex items-center">
+                  {type === "discussion" && <MessageSquare className="h-5 w-5 mr-2 text-indigo-600" />}
+                  {type === "tableau" && <Layout className="h-5 w-5 mr-2 text-indigo-600" />}
+                  {type === "projet" && <Calendar className="h-5 w-5 mr-2 text-indigo-600" />}
+                  <span className="text-sm font-medium text-gray-700">
+                    {type === "discussion" ? "Discussion" : type === "tableau" ? "Tableau blanc" : "Projet"}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Le type d'un espace ne peut pas être modifié après sa création.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setType("discussion")}
+                  className={`flex flex-col items-center p-3 rounded-md border ${type === "discussion" ? "border-indigo-500 bg-indigo-50" : "border-gray-300"}`}
+                >
+                  <MessageSquare className={`h-5 w-5 mb-1 ${type === "discussion" ? "text-indigo-600" : "text-gray-500"}`} />
+                  <span className={`text-sm ${type === "discussion" ? "text-indigo-600 font-medium" : "text-gray-700"}`}>Discussion</span>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setType("tableau")}
+                  className={`flex flex-col items-center p-3 rounded-md border ${type === "tableau" ? "border-indigo-500 bg-indigo-50" : "border-gray-300"}`}
+                >
+                  <Layout className={`h-5 w-5 mb-1 ${type === "tableau" ? "text-indigo-600" : "text-gray-500"}`} />
+                  <span className={`text-sm ${type === "tableau" ? "text-indigo-600 font-medium" : "text-gray-700"}`}>Tableau blanc</span>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setType("projet")}
+                  className={`flex flex-col items-center p-3 rounded-md border ${type === "projet" ? "border-indigo-500 bg-indigo-50" : "border-gray-300"}`}
+                >
+                  <Calendar className={`h-5 w-5 mb-1 ${type === "projet" ? "text-indigo-600" : "text-gray-500"}`} />
+                  <span className={`text-sm ${type === "projet" ? "text-indigo-600 font-medium" : "text-gray-700"}`}>Projet</span>
+                </button>
+              </div>
+            )}
           </div>
           
           <div className="mb-6">

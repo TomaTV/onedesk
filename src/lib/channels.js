@@ -163,7 +163,8 @@ export async function updateChannel(channelId, { name, type, emoji }) {
         
         // Utiliser les valeurs existantes comme valeurs par défaut
         const updatedName = name || channel.name;
-        const updatedType = type || channel.type;
+        // Nous conservons toujours le type original - ignorer le type fourni
+        const updatedType = channel.type; // Conserver le type existant, ignorer la demande de changement
         const updatedEmoji = emoji !== undefined ? emoji : channel.emoji;
         
         const query = `

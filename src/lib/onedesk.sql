@@ -11,7 +11,6 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
-
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
@@ -20,59 +19,6 @@ SET time_zone = "+00:00";
 --
 -- Base de données : `onedesk`
 --
-
--- --------------------------------------------------------
-
---
--- Structure de la table `channels`
---
-
-CREATE TABLE `channels` (
-  `id` int(11) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `type` ENUM('discussion', 'tableau', 'projet') DEFAULT 'discussion',
-  `emoji` varchar(10) DEFAULT NULL,
-  `workspace_id` int(11) NOT NULL,
-  `position` int(11) NOT NULL DEFAULT 0,
-  `created_by` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Déchargement des données de la table `channels`
---
-
-INSERT INTO `channels` (`id`, `name`, `type`, `emoji`, `workspace_id`, `position`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 'Stratégie marketing', 'discussion', NULL, 1, 1, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
-(2, 'Campagnes', 'projet', NULL, 1, 2, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
-(3, 'Réseaux sociaux', 'discussion', '🌐', 1, 3, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
-(4, 'UI Elements', 'tableau', NULL, 2, 1, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
-(5, 'Brand Guidelines', 'discussion', '🎨', 2, 2, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
-(6, 'Projets Clients', 'projet', NULL, 3, 1, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
-(7, 'Planning', 'tableau', '🗓️', 3, 2, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
-(8, 'Bienvenue', 'discussion', '👋', 4, 1, 2, '2025-04-06 20:33:36', '2025-04-06 20:33:36'),
-(9, 'Notes', 'tableau', NULL, 4, 2, 2, '2025-04-06 20:33:36', '2025-04-06 20:33:36'),
-(12, 'Général', 'discussion', '👋', 6, 1, 2, '2025-04-06 20:36:26', '2025-04-06 20:36:26'),
-(13, 'Documents', 'tableau', NULL, 6, 2, 2, '2025-04-06 20:36:26', '2025-04-06 20:36:26'),
-(14, 'Bienvenue', 'discussion', '👋', 7, 1, 3, '2025-04-06 20:37:32', '2025-04-06 20:37:32'),
-(15, 'Notes', 'tableau', NULL, 7, 2, 3, '2025-04-06 20:37:32', '2025-04-06 20:37:32'),
-(16, 'OUAIS OUAIS', 'projet', NULL, 4, 3, 3, '2025-04-06 20:40:59', '2025-04-06 20:40:59');
-
---
--- Déchargement des données de la table `messages`
---
-
-INSERT INTO `messages` (`channel_id`, `user_id`, `content`, `created_at`) VALUES
-(1, 1, 'Bienvenue dans le canal de stratégie marketing !', '2025-04-06 20:32:10'),
-(1, 2, 'Merci pour l\'invitation, je suis ravi de rejoindre cette équipe.', '2025-04-06 20:33:50'),
-(3, 1, 'Ce canal est dédié à la stratégie sur les réseaux sociaux.', '2025-04-06 20:34:15'),
-(3, 3, 'Super initiative, j\'ai hâte de commencer à travailler sur ce projet.', '2025-04-06 20:38:05'),
-(5, 1, 'Bienvenue dans le canal des directives de marque. Veuillez partager vos idées ici.', '2025-04-06 20:35:22'),
-(8, 2, 'Bonjour à tous ! Bienvenue dans cet espace de travail.', '2025-04-06 20:34:00'),
-(8, 3, 'Merci pour l\'invitation, c\'est un plaisir de participer.', '2025-04-06 20:41:10'),
-(12, 2, 'Premier message dans ce workspace !', '2025-04-06 20:36:40'),
-(14, 3, 'Bienvenue dans mon nouvel espace de travail !', '2025-04-06 20:37:45');
 
 -- --------------------------------------------------------
 
@@ -130,17 +76,74 @@ INSERT INTO `workspaces` (`id`, `name`, `letter`, `color`, `created_by`, `create
 -- --------------------------------------------------------
 
 --
--- Structure de la table `workspace_invitations`
+-- Structure de la table `channels`
 --
 
-CREATE TABLE `workspace_invitations` (
+CREATE TABLE `channels` (
   `id` int(11) NOT NULL,
-  `token` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `type` ENUM('discussion', 'tableau', 'projet') DEFAULT 'discussion',
+  `emoji` varchar(10) DEFAULT NULL,
   `workspace_id` int(11) NOT NULL,
-  `email` varchar(255) NOT NULL,
+  `position` int(11) NOT NULL DEFAULT 0,
+  `created_by` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `expires_at` timestamp NOT NULL DEFAULT (current_timestamp() + interval 7 day)
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `channels`
+--
+
+INSERT INTO `channels` (`id`, `name`, `type`, `emoji`, `workspace_id`, `position`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 'Stratégie marketing', 'discussion', NULL, 1, 1, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
+(2, 'Campagnes', 'projet', NULL, 1, 2, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
+(3, 'Réseaux sociaux', 'discussion', '🌐', 1, 3, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
+(4, 'UI Elements', 'tableau', NULL, 2, 1, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
+(5, 'Brand Guidelines', 'discussion', '🎨', 2, 2, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
+(6, 'Projets Clients', 'projet', NULL, 3, 1, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
+(7, 'Planning', 'tableau', '🗓️', 3, 2, 1, '2025-04-06 20:31:57', '2025-04-06 20:31:57'),
+(8, 'Bienvenue', 'discussion', '👋', 4, 1, 2, '2025-04-06 20:33:36', '2025-04-06 20:33:36'),
+(9, 'Notes', 'tableau', NULL, 4, 2, 2, '2025-04-06 20:33:36', '2025-04-06 20:33:36'),
+(12, 'Général', 'discussion', '👋', 6, 1, 2, '2025-04-06 20:36:26', '2025-04-06 20:36:26'),
+(13, 'Documents', 'tableau', NULL, 6, 2, 2, '2025-04-06 20:36:26', '2025-04-06 20:36:26'),
+(14, 'Bienvenue', 'discussion', '👋', 7, 1, 3, '2025-04-06 20:37:32', '2025-04-06 20:37:32'),
+(15, 'Notes', 'tableau', NULL, 7, 2, 3, '2025-04-06 20:37:32', '2025-04-06 20:37:32'),
+(16, 'OUAIS OUAIS', 'projet', NULL, 4, 3, 3, '2025-04-06 20:40:59', '2025-04-06 20:40:59');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `messages`
+--
+
+CREATE TABLE `messages` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `channel_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `content` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `channel_id` (`channel_id`),
+  KEY `user_id` (`user_id`),
+  KEY `idx_messages_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `messages`
+--
+
+INSERT INTO `messages` (`id`, `channel_id`, `user_id`, `content`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 'Bienvenue dans le canal de stratégie marketing !', '2025-04-06 20:32:10', '2025-04-06 20:32:10'),
+(2, 1, 2, 'Merci pour l\'invitation, je suis ravi de rejoindre cette équipe.', '2025-04-06 20:33:50', '2025-04-06 20:33:50'),
+(3, 3, 1, 'Ce canal est dédié à la stratégie sur les réseaux sociaux.', '2025-04-06 20:34:15', '2025-04-06 20:34:15'),
+(4, 3, 3, 'Super initiative, j\'ai hâte de commencer à travailler sur ce projet.', '2025-04-06 20:38:05', '2025-04-06 20:38:05'),
+(5, 5, 1, 'Bienvenue dans le canal des directives de marque. Veuillez partager vos idées ici.', '2025-04-06 20:35:22', '2025-04-06 20:35:22'),
+(6, 8, 2, 'Bonjour à tous ! Bienvenue dans cet espace de travail.', '2025-04-06 20:34:00', '2025-04-06 20:34:00'),
+(7, 8, 3, 'Merci pour l\'invitation, c\'est un plaisir de participer.', '2025-04-06 20:41:10', '2025-04-06 20:41:10'),
+(8, 12, 2, 'Premier message dans ce workspace !', '2025-04-06 20:36:40', '2025-04-06 20:36:40'),
+(9, 14, 3, 'Bienvenue dans mon nouvel espace de travail !', '2025-04-06 20:37:45', '2025-04-06 20:37:45');
 
 -- --------------------------------------------------------
 
@@ -152,22 +155,9 @@ CREATE TABLE `workspace_members` (
   `workspace_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `role` enum('admin','member') NOT NULL DEFAULT 'member',
-  `joined_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Structure de la table `messages`
---
-
-CREATE TABLE `messages` (
-  `id` int(11) NOT NULL,
-  `channel_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `content` text NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `joined_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`workspace_id`,`user_id`),
+  KEY `idx_member_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -183,132 +173,90 @@ INSERT INTO `workspace_members` (`workspace_id`, `user_id`, `role`, `joined_at`)
 (6, 2, 'admin', '2025-04-06 20:36:26'),
 (7, 3, 'admin', '2025-04-06 20:37:32');
 
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `workspace_invitations`
+--
+
+CREATE TABLE `workspace_invitations` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `token` varchar(255) NOT NULL,
+  `workspace_id` int(11) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `expires_at` timestamp NOT NULL DEFAULT (current_timestamp() + interval 7 day),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token` (`token`),
+  KEY `workspace_id` (`workspace_id`),
+  KEY `idx_invitation_token` (`token`),
+  KEY `idx_invitation_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
 --
 -- Index pour les tables déchargées
 --
 
---
--- Index pour la table `channels`
---
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `idx_user_email` (`email`);
+
+ALTER TABLE `workspaces`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_workspace_created_by` (`created_by`);
+
 ALTER TABLE `channels`
   ADD PRIMARY KEY (`id`),
   ADD KEY `created_by` (`created_by`),
   ADD KEY `idx_channel_workspace` (`workspace_id`),
   ADD KEY `idx_channel_position` (`position`);
 
---
--- Index pour la table `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `idx_user_email` (`email`);
-
---
--- Index pour la table `workspaces`
---
-ALTER TABLE `workspaces`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_workspace_created_by` (`created_by`);
-
---
--- Index pour la table `workspace_invitations`
---
-ALTER TABLE `workspace_invitations`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `token` (`token`),
-  ADD KEY `workspace_id` (`workspace_id`),
-  ADD KEY `idx_invitation_token` (`token`),
-  ADD KEY `idx_invitation_email` (`email`);
-
---
--- Index pour la table `workspace_members`
---
-ALTER TABLE `workspace_members`
-  ADD PRIMARY KEY (`workspace_id`,`user_id`),
-  ADD KEY `idx_member_user` (`user_id`);
-
---
--- Index pour la table `messages`
---
-ALTER TABLE `messages`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `channel_id` (`channel_id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `idx_messages_created_at` (`created_at`);
+-- --------------------------------------------------------
 
 --
 -- AUTO_INCREMENT pour les tables déchargées
 --
 
---
--- AUTO_INCREMENT pour la table `channels`
---
-ALTER TABLE `channels`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
-
---
--- AUTO_INCREMENT pour la table `users`
---
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
---
--- AUTO_INCREMENT pour la table `workspaces`
---
 ALTER TABLE `workspaces`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
---
--- AUTO_INCREMENT pour la table `workspace_invitations`
---
-ALTER TABLE `workspace_invitations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+ALTER TABLE `channels`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
---
--- AUTO_INCREMENT pour la table `messages`
---
 ALTER TABLE `messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+ALTER TABLE `workspace_invitations`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+-- --------------------------------------------------------
 
 --
 -- Contraintes pour les tables déchargées
 --
 
---
--- Contraintes pour la table `channels`
---
+ALTER TABLE `workspaces`
+  ADD CONSTRAINT `workspaces_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
+
 ALTER TABLE `channels`
   ADD CONSTRAINT `channels_ibfk_1` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `channels_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
 
---
--- Contraintes pour la table `workspaces`
---
-ALTER TABLE `workspaces`
-  ADD CONSTRAINT `workspaces_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
+ALTER TABLE `messages`
+  ADD CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
---
--- Contraintes pour la table `workspace_invitations`
---
-ALTER TABLE `workspace_invitations`
-  ADD CONSTRAINT `workspace_invitations_ibfk_1` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE;
-
---
--- Contraintes pour la table `workspace_members`
---
 ALTER TABLE `workspace_members`
   ADD CONSTRAINT `workspace_members_ibfk_1` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `workspace_members_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
---
--- Contraintes pour la table `messages`
---
-ALTER TABLE `messages`
-  ADD CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-COMMIT;
+ALTER TABLE `workspace_invitations`
+  ADD CONSTRAINT `workspace_invitations_ibfk_1` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE;
 
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+COMMIT;

@@ -46,12 +46,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Trouver le channel par son nom
-    const channel = await findChannelByName(channelName, workspace.id);
-
-    if (!channel) {
-      return NextResponse.json({ error: "Channel not found" }, { status: 404 });
-    }
+    // Le channel a déjà été récupéré plus haut
 
     return NextResponse.json(channel);
   } catch (error) {
@@ -88,6 +83,21 @@ export async function PATCH(request, { params }) {
       return NextResponse.json(
         { error: "Workspace not found" },
         { status: 404 }
+      );
+    }
+
+    // Trouver le channel par son nom
+    const channel = await findChannelByName(channelName, workspace.id);
+
+    if (!channel) {
+      return NextResponse.json({ error: "Channel not found" }, { status: 404 });
+    }
+
+    // Vérifier si l'utilisateur essaie de modifier le type
+    if (body.type && body.type !== channel.type) {
+      return NextResponse.json(
+        { error: "Modification du type de channel non autorisée" },
+        { status: 403 }
       );
     }
 

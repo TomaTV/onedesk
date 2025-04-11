@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import { fr } from "date-fns/locale";
 import { MoreVertical, Trash2, Edit, Check, X } from "lucide-react";
 
@@ -21,10 +21,10 @@ export default function ChatMessage({
   const isOwnMessage = currentUserId === message.user_id;
   
   // Formater la date de création
-  const formattedDate = formatDistanceToNow(new Date(message.created_at), {
-    addSuffix: true,
-    locale: fr,
-  });
+  const messageDate = new Date(message.created_at);
+  const formattedDate = isToday(messageDate)
+    ? format(messageDate, "HH:mm")
+    : format(messageDate, "dd/MM/yyyy HH:mm");
   
   // Ouvrir/fermer le menu
   const toggleMenu = (e) => {
