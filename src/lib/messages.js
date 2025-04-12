@@ -1,4 +1,6 @@
 import { executeQuery } from "./db";
+import fs from "fs";
+import path from "path";
 
 /**
  * Récupère tous les messages d'un channel spécifique
@@ -20,6 +22,26 @@ export async function getChannelMessages(channelId, limit = 50, offset = 0) {
       `,
       values: [channelId, limit, offset],
     });
+    
+    // Traiter les images JSON pour chaque message
+    for (const message of messages) {
+      // Si le message a des images au format JSON, les parser
+      if (message.images) {
+        try {
+          message.image_urls = JSON.parse(message.images);
+        } catch (jsonError) {
+          console.error("Erreur lors du parsing des images JSON:", jsonError);
+          message.image_urls = [];
+        }
+      } else {
+        message.image_urls = [];
+      }
+      
+      // Si l'ancienne colonne image_url est utilisée, l'ajouter au tableau image_urls
+      if (message.image_url && !message.image_urls.includes(message.image_url)) {
+        message.image_urls.push(message.image_url);
+      }
+    }
 
     return messages.reverse(); // Renvoyer dans l'ordre chronologique
   } catch (error) {
@@ -29,26 +51,27 @@ export async function getChannelMessages(channelId, limit = 50, offset = 0) {
 }
 
 /**
- * Ajoute un nouveau message dans un channel
+ * Ajoute un nouveau message dans un channel, avec ou sans image
  * @param {number} channelId - ID du channel
  * @param {number} userId - ID de l'utilisateur
  * @param {string} content - Contenu du message
+ * @param {string|null} imageUrl - URL de l'image (optionnel)
  * @returns {Promise<Object>} Le message créé avec ID
  */
-export async function addMessage(channelId, userId, content) {
+export async function addMessage(channelId, userId, content, imageUrl = null) {
   try {
-    // Vérifier que le contenu n'est pas vide
-    if (!content || content.trim() === '') {
+    // Vérifier que le contenu n'est pas vide, sauf si une image est fournie
+    if ((!content || content.trim() === "") && !imageUrl) {
       throw new Error("Message content cannot be empty");
     }
 
-    // Insérer le message
+    // Insérer le message avec ou sans image
     const result = await executeQuery({
       query: `
-        INSERT INTO messages (channel_id, user_id, content)
-        VALUES (?, ?, ?)
+        INSERT INTO messages (channel_id, user_id, content, image_url)
+        VALUES (?, ?, ?, ?)
       `,
-      values: [channelId, userId, content.trim()],
+      values: [channelId, userId, content.trim(), imageUrl],
     });
 
     if (!result.insertId) {
@@ -83,7 +106,7 @@ export async function deleteMessage(messageId, userId) {
   try {
     // Vérifier que l'utilisateur est bien l'auteur du message
     const [message] = await executeQuery({
-      query: "SELECT user_id FROM messages WHERE id = ?",
+      query: "SELECT user_id, image_url, images FROM messages WHERE id = ?",
       values: [messageId],
     });
 
@@ -95,7 +118,53 @@ export async function deleteMessage(messageId, userId) {
       throw new Error("You can only delete your own messages");
     }
 
-    // Supprimer le message
+    // Supprimer l'image unique du message principal si elle existe (ancien format)
+    if (message.image_url) {
+      try {
+        const imagePath = message.image_url;
+        // Vérifier si l'image est stockée localement (commence par /uploads/)
+        if (imagePath.startsWith("/uploads/")) {
+          const filePath = path.join(process.cwd(), "public", imagePath);
+          // Vérifier si le fichier existe avant de le supprimer
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log(`Image supprimée: ${filePath}`);
+          }
+        }
+      } catch (imageError) {
+        console.error(
+          "Erreur lors de la suppression de l'image:",
+          imageError
+        );
+        // Continuer malgré l'erreur (ne pas bloquer la suppression du message)
+      }
+    }
+
+    // Supprimer les images multiples (nouveau format)
+    if (message.images) {
+      try {
+        const imageUrls = JSON.parse(message.images);
+        
+        for (const imagePath of imageUrls) {
+          if (imagePath && imagePath.startsWith("/uploads/")) {
+            try {
+              const filePath = path.join(process.cwd(), "public", imagePath);
+              if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log(`Image multiple supprimée: ${filePath}`);
+              }
+            } catch (imgError) {
+              console.error("Erreur lors de la suppression d'une image:", imgError);
+              // Continuer avec les autres images
+            }
+          }
+        }
+      } catch (jsonError) {
+        console.error("Erreur lors du parsing JSON des images:", jsonError);
+      }
+    }
+
+    // Supprimer le message (et tous ses enfants grâce à ON DELETE CASCADE)
     const result = await executeQuery({
       query: "DELETE FROM messages WHERE id = ?",
       values: [messageId],
@@ -118,7 +187,7 @@ export async function deleteMessage(messageId, userId) {
 export async function updateMessage(messageId, userId, newContent) {
   try {
     // Vérifier que le contenu n'est pas vide
-    if (!newContent || newContent.trim() === '') {
+    if (!newContent || newContent.trim() === "") {
       throw new Error("Message content cannot be empty");
     }
 

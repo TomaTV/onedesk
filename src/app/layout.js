@@ -3,6 +3,14 @@ import "./globals.css";
 import AuthProvider from "@/components/auth/AuthProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
+// Initialiser le dossier d'uploads pour les images (serveur uniquement)
+import { initUploadsDirectory } from "@/lib/utils/initUploads";
+
+// Initialisation du dossier d'uploads côté serveur
+if (typeof window === 'undefined') {
+  initUploadsDirectory();
+}
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

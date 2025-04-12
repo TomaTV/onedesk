@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { getChannelMessages, addMessage } from "@/lib/messages";
 import { executeQuery } from "@/lib/db";
+import { v4 as uuidv4 } from 'uuid';
+import { writeFile } from 'fs/promises';
+import path from 'path';
+import { mkdir } from 'fs/promises';
+
+// Fonction helper pour obtenir l'extension de fichier
+function getFileExtension(filename) {
+  const ext = path.extname(filename);
+  return ext ? ext : '.jpg'; // Fallback à .jpg si pas d'extension
+}
 
 // GET - Récupérer les messages d'un channel
 export async function GET(request, context) {
@@ -135,19 +145,90 @@ export async function POST(request, context) {
       );
     }
 
-    // Récupérer le contenu du message
-    const body = await request.json();
-    const { content } = body;
+    // Vérifier si la requête contient du multipart/form-data (upload d'image)
+    const contentType = request.headers.get('content-type') || '';
+    let content = '';
+    let imageUrl = null;
+    // Initialiser la variable imageUrls en dehors du bloc if
+    let imageUrls = [];
+    
+    if (contentType.includes('multipart/form-data')) {
+      // Traiter un formulaire avec images
+      const formData = await request.formData();
+      content = formData.get('content') || '';
+      
+      // Rechercher toutes les clés qui commencent par "image_"
+      for (const [key, value] of formData.entries()) {
+        if (key.startsWith('image_') && value instanceof Blob) {
+          const imageFile = value;
+          
+          try {
+            // Vérifier le type de fichier
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+            if (!allowedTypes.includes(imageFile.type)) {
+              console.warn(`Type de fichier non autorisé: ${imageFile.type}. Fichier ignoré.`);
+              continue;
+            }
+            
+            // Vérifier la taille du fichier (limite à 5 Mo)
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 Mo en octets
+            if (imageFile.size > MAX_FILE_SIZE) {
+              console.warn(`Fichier trop volumineux: ${imageFile.size} octets. Fichier ignoré.`);
+              continue;
+            }
+            
+            // Créer un nom de fichier unique
+            const fileName = `${uuidv4()}-${Date.now()}${getFileExtension(imageFile.name || 'image.jpg')}`;
+            
+            // Créer le dossier d'upload s'il n'existe pas
+            const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+            try {
+              await mkdir(uploadDir, { recursive: true });
+            } catch (mkdirError) {
+              console.error("Erreur lors de la création du dossier d'uploads:", mkdirError);
+            }
+            
+            // Chemin complet pour sauvegarder le fichier
+            const filePath = path.join(uploadDir, fileName);
+            
+            // Lire le contenu du fichier
+            const buffer = Buffer.from(await imageFile.arrayBuffer());
+            
+            // Écrire le fichier
+            await writeFile(filePath, buffer);
+            
+            // Ajouter l'URL à la liste
+            imageUrls.push(`/uploads/${fileName}`);
+          } catch (fileError) {
+            console.error("Erreur lors du traitement de l'image:", fileError);
+            // Continuer avec les autres images même si une échoue
+          }
+        }
+      }
+    } else {
+      // Traiter une requête JSON standard
+      try {
+        const body = await request.json();
+        content = body.content || '';
+      } catch (jsonError) {
+        console.error("Erreur lors du parsing JSON:", jsonError);
+        return NextResponse.json(
+          { error: "Invalid JSON", message: "Le format de la requête est invalide" },
+          { status: 400 }
+        );
+      }
+    }
 
-    if (!content || content.trim() === "") {
+    // Vérifier que le message a du contenu ou des images
+    if ((!content || content.trim() === "") && imageUrls.length === 0) {
       return NextResponse.json(
         { error: "Bad Request", message: "Le message ne peut pas être vide" },
         { status: 400 }
       );
     }
 
-    // Ajouter le message
-    const message = await addMessage(channelId, user.id, content);
+    // Ajouter le message avec les images éventuelles
+    const message = await addMessageWithImages(channelId, user.id, content, imageUrls);
 
     return NextResponse.json(message, { status: 201 });
   } catch (error) {
@@ -157,4 +238,61 @@ export async function POST(request, context) {
       { status: 500 }
     );
   }
+}
+
+// Fonction pour ajouter un message avec des images
+async function addMessageWithImages(channelId, userId, content, imageUrls = []) {
+  let mainMessageId;
+  
+  // Convertir le tableau d'images en JSON si des images sont présentes
+  const imagesJson = imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
+  
+  // Insérer le message avec le contenu et les URLs d'images en JSON
+  const query = `
+    INSERT INTO messages (
+      channel_id, user_id, content, images, created_at
+    ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+  `;
+
+  const result = await executeQuery({
+    query,
+    values: [channelId, userId, content, imagesJson],
+  });
+  
+  mainMessageId = result.insertId;
+
+  // Récupérer le message complet avec toutes ses images liées
+  const messageQuery = `
+    SELECT 
+      m.*, 
+      u.name as user_name, 
+      u.avatar as user_avatar
+    FROM messages m
+    JOIN users u ON m.user_id = u.id
+    WHERE m.id = ?
+  `;
+  
+  const [message] = await executeQuery({
+    query: messageQuery,
+    values: [mainMessageId],
+  });
+  
+  // Si nous avons des images en JSON, les décoder et les ajouter au message
+  if (message.images) {
+    try {
+      message.image_urls = JSON.parse(message.images);
+    } catch (error) {
+      console.error("Erreur lors du parsing des images JSON:", error);
+      message.image_urls = [];
+    }
+  } else {
+    message.image_urls = [];
+  }
+  
+  // Si l'ancienne colonne image_url est utilisée, l'ajouter au tableau image_urls
+  if (message.image_url) {
+    message.image_urls.push(message.image_url);
+  }
+  
+  return message;
 }

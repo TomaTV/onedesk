@@ -52,17 +52,39 @@ export default function useChat(channelId, limit = 50) {
 
   // Fonction pour envoyer un message (version REST API)
   const sendMessage = useCallback(
-    async (content) => {
-      if (!channelId || !content.trim()) return;
+    async (content, imageFiles = []) => {
+      // Permettre l'envoi d'un message avec seulement des images (sans texte)
+      if (!channelId || (!content.trim() && imageFiles.length === 0)) return;
 
       try {
-        const response = await fetch(`/api/channels/${channelId}/messages`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ content: content.trim() }),
-        });
+        let requestOptions;
+        
+        if (imageFiles && imageFiles.length > 0) {
+          // Si au moins une image est jointe, utiliser FormData pour l'upload multipart
+          const formData = new FormData();
+          formData.append('content', content.trim());
+          
+          // Ajouter chaque image comme un fichier séparé
+          imageFiles.forEach((file, index) => {
+            formData.append(`image_${index}`, file);
+          });
+          
+          requestOptions = {
+            method: 'POST',
+            body: formData
+          };
+        } else {
+          // Sinon, envoi JSON classique
+          requestOptions = {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content: content.trim() }),
+          };
+        }
+
+        const response = await fetch(`/api/channels/${channelId}/messages`, requestOptions);
 
         if (!response.ok) {
           throw new Error(`Erreur lors de l'envoi du message: ${response.status}`);
@@ -70,12 +92,23 @@ export default function useChat(channelId, limit = 50) {
 
         const newMessage = await response.json();
         setMessages(prev => [...prev, newMessage]);
+        
+        // Ajouter un petit délai pour laisser le temps au serveur de traiter l'image
+        if (imageFiles && imageFiles.length > 0) {
+          setTimeout(() => {
+            // Refetch messages pour obtenir l'URL de l'image
+            fetch(`/api/channels/${channelId}/messages?limit=${limit}`)
+              .then(res => res.json())
+              .then(data => setMessages(data || []))
+              .catch(err => console.error("Erreur rafraîchissement après upload:", err));
+          }, 1000);
+        }
       } catch (err) {
         console.error("Erreur lors de l'envoi du message:", err);
         setError(`Erreur lors de l'envoi du message: ${err.message}`);
       }
     },
-    [channelId]
+    [channelId, limit]
   );
 
   // Fonction pour supprimer un message

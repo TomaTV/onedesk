@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  devIndicators: false,
+  devIndicators: {
+    autoPrerender: false, // ou retirer cette ligne
+  },
   images: {
     remotePatterns: [
       {
@@ -18,8 +20,6 @@ const nextConfig = {
     });
     return config;
   },
-  // Nouvelle position pour les packages externes des server components
-  serverExternalPackages: ["bufferutil", "utf-8-validate"],
 };
 
 export default nextConfig;

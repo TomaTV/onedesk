@@ -629,7 +629,7 @@ const emojiCategories = [
   },
 ];
 
-const EmojiPicker = ({ onSelect, onClose }) => {
+const EmojiPicker = ({ onEmojiSelect }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredEmojis, setFilteredEmojis] = useState([]);
   const [recentEmojis, setRecentEmojis] = useState([]);
@@ -666,7 +666,9 @@ const EmojiPicker = ({ onSelect, onClose }) => {
     localStorage.setItem("recentEmojis", JSON.stringify(updatedRecent));
     emojiCategories[0].emojis = updatedRecent;
 
-    onSelect(emoji);
+    if (onEmojiSelect) {
+      onEmojiSelect(emoji);
+    }
   };
 
   const handleSearch = (e) => {
@@ -710,16 +712,7 @@ const EmojiPicker = ({ onSelect, onClose }) => {
         <span className="text-sm font-medium text-gray-900">
           Choisir un emoji
         </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-          className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
-          aria-label="Fermer"
-        >
-          <X size={16} />
-        </button>
+        <span className="text-xs text-gray-500">Emoji</span>
       </div>
 
       <div className="p-2 border-b border-gray-200">

@@ -122,11 +122,15 @@ CREATE TABLE `messages` (
   `channel_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `content` text NOT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `images` text DEFAULT NULL,
+  `parent_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `channel_id` (`channel_id`),
   KEY `user_id` (`user_id`),
+  KEY `parent_id` (`parent_id`),
   KEY `idx_messages_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

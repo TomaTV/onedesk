@@ -12,7 +12,7 @@ export default function ChannelChat({ channel, workspace }) {
   const [userId, setUserId] = useState(null);
   const messagesEndRef = useRef(null);
   const firstLoadRef = useRef(true);
-  
+
   // Utiliser notre hook personnalisé pour la gestion du chat
   const {
     messages,
@@ -21,7 +21,7 @@ export default function ChannelChat({ channel, workspace }) {
     connected,
     sendMessage,
     deleteMessage,
-    updateMessage
+    updateMessage,
   } = useChat(channel?.id);
 
   // Récupérer l'ID de l'utilisateur courant
@@ -32,7 +32,10 @@ export default function ChannelChat({ channel, workspace }) {
         const userData = await response.json();
         setUserId(userData.id);
       } catch (error) {
-        console.error("Erreur lors de la récupération de l'ID utilisateur", error);
+        console.error(
+          "Erreur lors de la récupération de l'ID utilisateur",
+          error
+        );
       }
     };
 
@@ -43,9 +46,14 @@ export default function ChannelChat({ channel, workspace }) {
 
   // Faire défiler automatiquement vers le bas quand de nouveaux messages arrivent
   useEffect(() => {
-    if (messagesEndRef.current && (firstLoadRef.current || messages.length > 0)) {
-      messagesEndRef.current.scrollIntoView({ behavior: firstLoadRef.current ? "auto" : "smooth" });
-      
+    if (
+      messagesEndRef.current &&
+      (firstLoadRef.current || messages.length > 0)
+    ) {
+      messagesEndRef.current.scrollIntoView({
+        behavior: firstLoadRef.current ? "auto" : "smooth",
+      });
+
       // Réinitialiser le flag après le premier chargement
       if (firstLoadRef.current) {
         firstLoadRef.current = false;
@@ -54,9 +62,16 @@ export default function ChannelChat({ channel, workspace }) {
   }, [messages]);
 
   // Gestionnaires d'événements simplifiés avec notre hook useChat
-  const handleSendMessage = (content) => {
+  const handleSendMessage = (content, imageFile) => {
     if (!userId || !connected) return;
-    sendMessage(content);
+
+    if (imageFile) {
+      // Si une image est jointe, l'envoyer avec le message
+      sendMessage(content, imageFile);
+    } else {
+      // Sinon, envoyer juste le texte
+      sendMessage(content);
+    }
   };
 
   const handleDeleteMessage = (messageId) => {
@@ -98,15 +113,21 @@ export default function ChannelChat({ channel, workspace }) {
   return (
     <div className="flex flex-col h-full">
       {/* En-tête du chat */}
-      <div className="flex items-center p-4 border-b border-gray-200">
+      <div className="flex items-center p-4 border-b border-gray-200 text-black">
         <div className="font-semibold text-lg"># {channel?.name}</div>
         <div className="ml-2 text-sm text-gray-500">{channel?.emoji}</div>
         <div className="ml-auto flex items-center gap-2">
-          <div className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`}></div>
-          <span className="text-xs text-gray-500">{connected ? "Connecté" : "Déconnecté"}</span>
+          <div
+            className={`h-2 w-2 rounded-full ${
+              connected ? "bg-green-500" : "bg-red-500"
+            }`}
+          ></div>
+          <span className="text-xs text-gray-500">
+            {connected ? "Connecté" : "Déconnecté"}
+          </span>
         </div>
       </div>
-      
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
@@ -131,11 +152,11 @@ export default function ChannelChat({ channel, workspace }) {
           </>
         )}
       </div>
-      
+
       {/* Zone de saisie */}
-      <ChatInput 
-        onSendMessage={handleSendMessage} 
-        isDisabled={!connected || !userId} 
+      <ChatInput
+        onSendMessage={handleSendMessage}
+        isDisabled={!connected || !userId}
       />
     </div>
   );

@@ -3,7 +3,44 @@
 import { useState, useRef } from "react";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import { fr } from "date-fns/locale";
-import { MoreVertical, Trash2, Edit, Check, X } from "lucide-react";
+import { MoreVertical, Trash2, Edit, Check, X, Image as ImageIcon } from "lucide-react";
+
+// Fonction pour parser le Markdown basique
+const renderMarkdown = (text) => {
+  if (!text) return '';
+  
+  // Remplacement pour le gras: **texte** ou __texte__
+  let formattedText = text.replace(/\*\*(.*?)\*\*|__(.*?)__/g, '<strong>$1$2</strong>');
+  
+  // Remplacement pour l'italique: *texte* ou _texte_
+  formattedText = formattedText.replace(/\*(.*?)\*|_(.*?)_/g, '<em>$1$2</em>');
+  
+  // Remplacement pour le code: `texte`
+  formattedText = formattedText.replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-red-600">$1</code>');
+  
+  // Remplacement pour les liens: [texte](url)
+  formattedText = formattedText.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>');
+  
+  // Remplacement pour le barré: ~~texte~~
+  formattedText = formattedText.replace(/~~(.*?)~~/g, '<del>$1</del>');
+  
+  // Remplacement pour les titres: # Texte, ## Texte, ### Texte
+  formattedText = formattedText.replace(/^# (.*$)/gm, '<h1 class="text-xl font-bold my-1">$1</h1>');
+  formattedText = formattedText.replace(/^## (.*$)/gm, '<h2 class="text-lg font-bold my-1">$1</h2>');
+  formattedText = formattedText.replace(/^### (.*$)/gm, '<h3 class="text-md font-bold my-1">$1</h3>');
+  
+  // Remplacement pour les listes: - item, * item
+  formattedText = formattedText.replace(/^- (.*$)/gm, '<li class="ml-5">$1</li>');
+  formattedText = formattedText.replace(/^\* (.*$)/gm, '<li class="ml-5">$1</li>');
+  
+  // Remplacement pour les citations: > texte
+  formattedText = formattedText.replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-gray-300 pl-2 py-1 my-1 text-gray-700">$1</blockquote>');
+  
+  // Conversion des sauts de ligne
+  formattedText = formattedText.replace(/\n/g, '<br/>');
+  
+  return formattedText;
+};
 
 export default function ChatMessage({
   message,
@@ -11,6 +48,8 @@ export default function ChatMessage({
   onDelete,
   onUpdate,
 }) {
+  // Vérifie si le message contient une/des image(s)
+  const hasImage = message.image_url || (message.image_urls && message.image_urls.length > 0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
@@ -182,8 +221,40 @@ export default function ChatMessage({
               </div>
             </div>
           ) : (
-            <div className="mt-1 text-gray-800 whitespace-pre-wrap break-words">
-              {message.content}
+            <div className="mt-1">
+              {/* Affichage du contenu avec Markdown */}
+              <div 
+                className="text-gray-800 whitespace-pre-wrap break-words"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
+              />
+              
+              {/* Affichage de l'image si présente */}
+              {message.image_url && (
+                <div className="mt-2">
+                  <img 
+                    src={message.image_url} 
+                    alt="Image jointe" 
+                    className="max-w-xs max-h-60 object-cover rounded-md border border-gray-200 hover:opacity-90 cursor-pointer"
+                    onClick={() => window.open(message.image_url, '_blank')}
+                  />
+                </div>
+              )}
+              
+              {/* Affichage des images multiples si présentes */}
+              {message.image_urls && message.image_urls.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {message.image_urls.map((imgUrl, index) => (
+                    <div key={index} className="relative w-36 h-36 overflow-hidden">
+                      <img 
+                        src={imgUrl} 
+                        alt={`Image jointe ${index + 1}`} 
+                        className="absolute inset-0 w-full h-full object-cover rounded-md border border-gray-200 hover:opacity-90 cursor-pointer"
+                        onClick={() => window.open(imgUrl, '_blank')}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
