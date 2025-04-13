@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { getChannelMessages, addMessage } from "@/lib/messages";
+import { getChannelMessages, addMessage, getMessagesSince } from "@/lib/messages";
 import { executeQuery } from "@/lib/db";
 import { v4 as uuidv4 } from 'uuid';
 import { writeFile } from 'fs/promises';
@@ -64,15 +64,30 @@ export async function GET(request, context) {
       );
     }
 
-    // Récupérer les paramètres de pagination
+    // Récupérer les paramètres de pagination et filtrage
     const url = new URL(request.url);
-    const limit = parseInt(url.searchParams.get("limit") || "50");
+    const limit = parseInt(url.searchParams.get("limit") || "25");
     const offset = parseInt(url.searchParams.get("offset") || "0");
+    const after = url.searchParams.get("after"); // Timestamp pour charger uniquement les messages plus récents
 
-    // Récupérer les messages
-    const messages = await getChannelMessages(channelId, limit, offset);
+    // Récupérer les messages selon les paramètres
+    let messages;
+    if (after) {
+      // Récupérer uniquement les messages plus récents que le timestamp fourni
+      messages = await getMessagesSince(channelId, after);
+    } else {
+      // Récupération standard avec pagination
+      messages = await getChannelMessages(channelId, limit, offset);
+    }
 
-    return NextResponse.json(messages);
+    // Ajouter des en-têtes anti-cache pour s'assurer que les messages sont toujours à jour
+    return NextResponse.json(messages, {
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
+      }
+    });
   } catch (error) {
     console.error("Error in GET /api/channels/[channelId]/messages:", error);
     return NextResponse.json(

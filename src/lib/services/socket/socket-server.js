@@ -54,6 +54,37 @@ export function initSocketServer(res) {
     io.on("connection", async (socket) => {
       console.log(`Client connecté: ${socket.id}, utilisateur: ${socket.user.email}`);
       
+      // Rejoindre une room personnelle basée sur l'email de l'utilisateur pour les notifications
+      if (socket.user && socket.user.email) {
+        const userRoom = `user:${socket.user.email}`;
+        socket.join(userRoom);
+        console.log(`Client ${socket.id} a rejoint sa room personnelle ${userRoom}`);
+        
+        // Pour faciliter le débogage, envoyons une notification de test 5 secondes après la connexion
+        setTimeout(() => {
+          // Envoyer une notification de connexion pour confirmer que tout fonctionne
+          socket.emit('debug', { message: 'Votre client est correctement connecté et peut recevoir des notifications' });
+          
+          // Commentez la ligne suivante en production
+          // socket.emit('notification', { type: 'test', workspaceName: 'Test Workspace', from: 'Système', message: 'Test de notification', token: 'test-token' });
+        }, 5000);
+      }
+      
+      // Envoyer un événement de confirmation de connexion
+      if (socket.user && socket.user.email) {
+        const userRoom = `user:${socket.user.email}`;
+        socket.emit('connected', { 
+          userRoom,
+          message: 'Connecté au système de notification en temps réel'
+        });
+      }
+      
+      // Tester la notification - décommenter pour tester
+      // setTimeout(() => {
+      //   socket.emit('notification', { type: 'test', message: 'Test notification' });
+      //   console.log(`Test notification envoyé à ${socket.id}`);
+      // }, 5000);
+      
       // Rejoindre un channel
       socket.on("join", (channelId) => {
         const roomName = `channel:${channelId}`;
@@ -138,6 +169,29 @@ export function initSocketServer(res) {
       res.socket.server.io = io;
       console.log("Socket.IO attaché au serveur HTTP");
     }
+    
+    // Ajouter une méthode d'envoi de notification à l'instance Socket.IO
+    io.sendNotification = (email, notificationData) => {
+      try {
+        const userRoom = `user:${email}`;
+        
+        // S'assurer que les données de notification ont un timestamp
+        if (!notificationData.timestamp) {
+          notificationData.timestamp = new Date().toISOString();
+        }
+        
+        // Envoyer la notification sur plusieurs canaux pour assurer la compatibilité
+        io.to(userRoom).emit('notification', notificationData);
+        io.to(userRoom).emit('invitation', notificationData);
+        io.to(userRoom).emit('global_invitation', notificationData);
+        
+        console.log(`Notification envoyée à ${userRoom}:`, notificationData);
+        return true;
+      } catch (error) {
+        console.error(`Erreur d'envoi de notification à ${email}:`, error);
+        return false;
+      }
+    };
   }
   
   return io;

@@ -629,7 +629,7 @@ const emojiCategories = [
   },
 ];
 
-const EmojiPicker = ({ onEmojiSelect }) => {
+const EmojiPicker = ({ onEmojiSelect, onSelect }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredEmojis, setFilteredEmojis] = useState([]);
   const [recentEmojis, setRecentEmojis] = useState([]);
@@ -666,8 +666,14 @@ const EmojiPicker = ({ onEmojiSelect }) => {
     localStorage.setItem("recentEmojis", JSON.stringify(updatedRecent));
     emojiCategories[0].emojis = updatedRecent;
 
+    // Appeler le callback approprié
     if (onEmojiSelect) {
       onEmojiSelect(emoji);
+    }
+    
+    // Support pour l'ancienne API
+    if (onSelect) {
+      onSelect(emoji);
     }
   };
 

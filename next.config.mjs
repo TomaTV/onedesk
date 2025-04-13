@@ -3,6 +3,7 @@ const nextConfig = {
   devIndicators: {
     autoPrerender: false, // ou retirer cette ligne
   },
+  devIndicators: false,
   images: {
     remotePatterns: [
       {

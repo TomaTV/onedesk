@@ -5,11 +5,11 @@ import path from "path";
 /**
  * Récupère tous les messages d'un channel spécifique
  * @param {number} channelId - ID du channel
- * @param {number} limit - Nombre de messages à récupérer (optionnel, par défaut 50)
+ * @param {number} limit - Nombre de messages à récupérer (optionnel, par défaut 25)
  * @param {number} offset - Offset pour la pagination (optionnel, par défaut 0)
  * @returns {Promise<Array>} Liste des messages avec informations sur l'utilisateur
  */
-export async function getChannelMessages(channelId, limit = 50, offset = 0) {
+export async function getChannelMessages(channelId, limit = 25, offset = 0) {
   try {
     const messages = await executeQuery({
       query: `
@@ -47,6 +47,52 @@ export async function getChannelMessages(channelId, limit = 50, offset = 0) {
   } catch (error) {
     console.error("Error fetching channel messages:", error);
     throw new Error(`Failed to fetch messages: ${error.message}`);
+  }
+}
+
+/**
+ * Récupère les messages après un timestamp donné
+ * @param {number} channelId - ID du channel
+ * @param {string} timestamp - Timestamp ISO pour filtrer les messages plus récents
+ * @returns {Promise<Array>} Liste des messages après le timestamp donné
+ */
+export async function getMessagesSince(channelId, timestamp) {
+  try {
+    const messages = await executeQuery({
+      query: `
+        SELECT m.*, u.name as user_name, u.avatar as user_avatar 
+        FROM messages m
+        JOIN users u ON m.user_id = u.id
+        WHERE m.channel_id = ? AND m.created_at > ?
+        ORDER BY m.created_at ASC
+      `,
+      values: [channelId, timestamp],
+    });
+    
+    // Traiter les images JSON pour chaque message
+    for (const message of messages) {
+      // Si le message a des images au format JSON, les parser
+      if (message.images) {
+        try {
+          message.image_urls = JSON.parse(message.images);
+        } catch (jsonError) {
+          console.error("Erreur lors du parsing des images JSON:", jsonError);
+          message.image_urls = [];
+        }
+      } else {
+        message.image_urls = [];
+      }
+      
+      // Si l'ancienne colonne image_url est utilisée, l'ajouter au tableau image_urls
+      if (message.image_url && !message.image_urls.includes(message.image_url)) {
+        message.image_urls.push(message.image_url);
+      }
+    }
+
+    return messages; // Déjà dans l'ordre chronologique
+  } catch (error) {
+    console.error("Error fetching messages since timestamp:", error);
+    throw new Error(`Failed to fetch recent messages: ${error.message}`);
   }
 }
 

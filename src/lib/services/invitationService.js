@@ -1,7 +1,7 @@
 // Service pour gérer les invitations
 export async function getUserInvitations(email, cacheBuster = null) {
   try {
-    // Construire l'URL avec cache-buster pour permettre la mise en cache
+    // Construire l'URL avec cache-buster pour éviter complètement la mise en cache
     let url = '/api/invitations/pending';
     if (cacheBuster) {
       url += `?t=${cacheBuster}`;
@@ -11,9 +11,12 @@ export async function getUserInvitations(email, cacheBuster = null) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       },
-      // Utiliser une stratégie de cache pour réduire les appels au serveur
-      cache: 'default', // Le navigateur utilisera sa stratégie par défaut de cache
+      // Désactiver complètement le cache pour toujours obtenir les dernières invitations
+      cache: 'no-store',
     });
     
     if (!response.ok) {

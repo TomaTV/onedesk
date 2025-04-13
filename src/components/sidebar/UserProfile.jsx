@@ -76,8 +76,8 @@ const UserProfile = ({ user, loading, error, onWorkspacesUpdated }) => {
     // Charger immédiatement au début
     fetchInvitations();
     
-    // Rafraîchir les invitations toutes les 60 secondes au lieu de 10
-    const intervalId = setInterval(fetchInvitations, 60000);
+    // Rafraîchir les invitations toutes les 5 secondes (intervalle optimal entre performance et réactivité)
+    const intervalId = setInterval(fetchInvitations, 5000);
     
     return () => {
       isMounted = false;

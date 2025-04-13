@@ -33,9 +33,6 @@ export default function WorkspacePage() {
       status === "authenticated" &&
       !isInitialLoad.current
     ) {
-      console.log(
-        `Changement de workspace: ${lastWorkspaceRef.current} -> ${workspaceName}`
-      );
       window.location.reload();
     }
 
@@ -76,7 +73,6 @@ export default function WorkspacePage() {
         setLoading(true);
 
         try {
-          console.log("Chargement des données du workspace:", workspaceName);
           const decodedWorkspace = decodeURIComponent(workspaceName);
 
           // Récupérer tous les workspaces
@@ -107,7 +103,6 @@ export default function WorkspacePage() {
           setWorkspace(matchedWorkspace);
 
           // Récupérer les channels de ce workspace
-          console.log("Chargement channels de:", matchedWorkspace.name);
           const channelsResponse = await fetch(
             `/api/workspaces/${encodeURIComponent(
               matchedWorkspace.name
@@ -127,7 +122,6 @@ export default function WorkspacePage() {
           }
 
           const channelsData = await channelsResponse.json();
-          console.log(`${channelsData.length} channels trouvés`);
           setChannels(channelsData);
 
           // Si des channels existent et qu'on n'a pas encore redirigé, aller vers le premier
@@ -136,10 +130,6 @@ export default function WorkspacePage() {
             !hasRedirectedRef.current &&
             isInitialLoad.current
           ) {
-            console.log(
-              "Redirection vers le premier channel:",
-              channelsData[0].name
-            );
             hasRedirectedRef.current = true;
             isInitialLoad.current = false;
 

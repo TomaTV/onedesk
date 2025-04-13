@@ -4,9 +4,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 // GET /api/invitations/[token] - Récupère les détails d'une invitation
-export async function GET(request, { params }) {
+export async function GET(request, context) {
   try {
-    const token = params.token;
+    // Récupérer le token de l'URL plutôt que des params
+    const url = request.url;
+    const segments = url.split('/');
+    const token = segments[segments.length - 1];
     
     // Validation
     if (!token) {
@@ -31,9 +34,12 @@ export async function GET(request, { params }) {
 }
 
 // DELETE /api/invitations/[token] - Supprime une invitation après utilisation
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
   try {
-    const token = params.token;
+    // Récupérer le token de l'URL plutôt que des params
+    const url = request.url;
+    const segments = url.split('/');
+    const token = segments[segments.length - 1];
     
     // Récupérer la session de l'utilisateur courant
     const session = await getServerSession(authOptions);

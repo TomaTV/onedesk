@@ -130,9 +130,8 @@ export async function GET(req) {
       });
     });
     
-    // Démarrer le serveur Socket.IO
-    await io.listen(3001);
-    console.log("Socket.IO server started on port 3001");
+    // Ne pas démarrer un serveur séparé, utiliser le serveur HTTP de Next.js
+    // L'adaptateur sera géré par le client Socket.IO via le chemin /api/socket
   }
   
   return NextResponse.json({ message: "Socket.IO server running" });

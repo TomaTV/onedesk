@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
@@ -10,15 +10,19 @@ import useChat from "@/lib/hooks/useChat";
 export default function ChannelChat({ channel, workspace }) {
   const { data: session } = useSession();
   const [userId, setUserId] = useState(null);
+  // Références pour le défilement
   const messagesEndRef = useRef(null);
   const firstLoadRef = useRef(true);
+  const messagesContainerRef = useRef(null);
 
   // Utiliser notre hook personnalisé pour la gestion du chat
   const {
     messages,
     loading,
     error,
-    connected,
+    loadMoreMessages,
+    hasMore,
+    loadingMore,
     sendMessage,
     deleteMessage,
     updateMessage,
@@ -63,7 +67,7 @@ export default function ChannelChat({ channel, workspace }) {
 
   // Gestionnaires d'événements simplifiés avec notre hook useChat
   const handleSendMessage = (content, imageFile) => {
-    if (!userId || !connected) return;
+    if (!userId) return;
 
     if (imageFile) {
       // Si une image est jointe, l'envoyer avec le message
@@ -75,14 +79,38 @@ export default function ChannelChat({ channel, workspace }) {
   };
 
   const handleDeleteMessage = (messageId) => {
-    if (!userId || !connected) return;
+    if (!userId) return;
     deleteMessage(messageId);
   };
 
   const handleUpdateMessage = (messageId, newContent) => {
-    if (!userId || !connected) return;
+    if (!userId) return;
     updateMessage(messageId, newContent);
   };
+
+  // Gestionnaire de défilement pour charger des messages plus anciens
+  const handleScroll = useCallback(() => {
+    if (!messagesContainerRef.current) return;
+
+    const { scrollTop } = messagesContainerRef.current;
+
+    // Si l'utilisateur a atteint le haut (ou presque), charger plus de messages
+    if (scrollTop < 50 && !loading && !loadingMore && hasMore) {
+      // Sauvegarder la position et la hauteur du conteneur
+      const container = messagesContainerRef.current;
+      const scrollHeight = container.scrollHeight;
+
+      loadMoreMessages().then(() => {
+        // Après le chargement, maintenir la même position de défilement relative
+        if (container) {
+          // Calculer la nouvelle position pour garder le même message visible
+          const newScrollHeight = container.scrollHeight;
+          const newScrollPosition = newScrollHeight - scrollHeight + 100; // +100px pour une meilleure expérience
+          container.scrollTop = newScrollPosition;
+        }
+      });
+    }
+  }, [loading, loadingMore, hasMore, loadMoreMessages]);
 
   // Afficher un indicateur de chargement
   if (loading) {
@@ -111,29 +139,32 @@ export default function ChannelChat({ channel, workspace }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white shadow-sm">
       {/* En-tête du chat */}
-      <div className="flex items-center p-4 border-b border-gray-200 text-black">
-        <div className="font-semibold text-lg"># {channel?.name}</div>
-        <div className="ml-2 text-sm text-gray-500">{channel?.emoji}</div>
-        <div className="ml-auto flex items-center gap-2">
-          <div
-            className={`h-2 w-2 rounded-full ${
-              connected ? "bg-green-500" : "bg-red-500"
-            }`}
-          ></div>
-          <span className="text-xs text-gray-500">
-            {connected ? "Connecté" : "Déconnecté"}
-          </span>
-        </div>
+      <div className="flex items-center p-4 border-b border-gray-200 bg-gray-50 text-black">
+        <div className="font-bold text-xl text-gray-800"># {channel?.name}</div>
+        <div className="ml-3 text-sm text-gray-600">{channel?.emoji}</div>
       </div>
-
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50"
+        onScroll={handleScroll}
+      >
+        {loadingMore && hasMore && (
+          <div className="flex justify-center p-4">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+            <span className="ml-2 text-gray-500">
+              Chargement de messages plus anciens...
+            </span>
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <p className="text-center">Aucun message pour le moment.</p>
-            <p className="text-center mt-2">
+            <p className="text-center font-medium">
+              Aucun message pour le moment.
+            </p>
+            <p className="text-center mt-2 text-sm text-gray-600">
               Soyez le premier à envoyer un message dans ce canal !
             </p>
           </div>
@@ -152,12 +183,8 @@ export default function ChannelChat({ channel, workspace }) {
           </>
         )}
       </div>
-
       {/* Zone de saisie */}
-      <ChatInput
-        onSendMessage={handleSendMessage}
-        isDisabled={!connected || !userId}
-      />
+      <ChatInput onSendMessage={handleSendMessage} isDisabled={!userId} />
     </div>
   );
 }

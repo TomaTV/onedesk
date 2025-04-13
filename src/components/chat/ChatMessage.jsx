@@ -3,42 +3,76 @@
 import { useState, useRef } from "react";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import { fr } from "date-fns/locale";
-import { MoreVertical, Trash2, Edit, Check, X, Image as ImageIcon } from "lucide-react";
+import {
+  MoreVertical,
+  Trash2,
+  Edit,
+  Check,
+  X,
+  Image as ImageIcon,
+} from "lucide-react";
 
 // Fonction pour parser le Markdown basique
 const renderMarkdown = (text) => {
-  if (!text) return '';
-  
+  if (!text) return "";
+
   // Remplacement pour le gras: **texte** ou __texte__
-  let formattedText = text.replace(/\*\*(.*?)\*\*|__(.*?)__/g, '<strong>$1$2</strong>');
-  
+  let formattedText = text.replace(
+    /\*\*(.*?)\*\*|__(.*?)__/g,
+    "<strong>$1$2</strong>"
+  );
+
   // Remplacement pour l'italique: *texte* ou _texte_
-  formattedText = formattedText.replace(/\*(.*?)\*|_(.*?)_/g, '<em>$1$2</em>');
-  
+  formattedText = formattedText.replace(/\*(.*?)\*|_(.*?)_/g, "<em>$1$2</em>");
+
   // Remplacement pour le code: `texte`
-  formattedText = formattedText.replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-red-600">$1</code>');
-  
+  formattedText = formattedText.replace(
+    /`(.*?)`/g,
+    '<code class="bg-gray-100 px-1 py-0.5 rounded text-red-600">$1</code>'
+  );
+
   // Remplacement pour les liens: [texte](url)
-  formattedText = formattedText.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>');
-  
+  formattedText = formattedText.replace(
+    /\[(.*?)\]\((.*?)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>'
+  );
+
   // Remplacement pour le barré: ~~texte~~
-  formattedText = formattedText.replace(/~~(.*?)~~/g, '<del>$1</del>');
-  
+  formattedText = formattedText.replace(/~~(.*?)~~/g, "<del>$1</del>");
+
   // Remplacement pour les titres: # Texte, ## Texte, ### Texte
-  formattedText = formattedText.replace(/^# (.*$)/gm, '<h1 class="text-xl font-bold my-1">$1</h1>');
-  formattedText = formattedText.replace(/^## (.*$)/gm, '<h2 class="text-lg font-bold my-1">$1</h2>');
-  formattedText = formattedText.replace(/^### (.*$)/gm, '<h3 class="text-md font-bold my-1">$1</h3>');
-  
+  formattedText = formattedText.replace(
+    /^# (.*$)/gm,
+    '<h1 class="text-xl font-bold my-1">$1</h1>'
+  );
+  formattedText = formattedText.replace(
+    /^## (.*$)/gm,
+    '<h2 class="text-lg font-bold my-1">$1</h2>'
+  );
+  formattedText = formattedText.replace(
+    /^### (.*$)/gm,
+    '<h3 class="text-md font-bold my-1">$1</h3>'
+  );
+
   // Remplacement pour les listes: - item, * item
-  formattedText = formattedText.replace(/^- (.*$)/gm, '<li class="ml-5">$1</li>');
-  formattedText = formattedText.replace(/^\* (.*$)/gm, '<li class="ml-5">$1</li>');
-  
+  formattedText = formattedText.replace(
+    /^- (.*$)/gm,
+    '<li class="ml-5">$1</li>'
+  );
+  formattedText = formattedText.replace(
+    /^\* (.*$)/gm,
+    '<li class="ml-5">$1</li>'
+  );
+
   // Remplacement pour les citations: > texte
-  formattedText = formattedText.replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-gray-300 pl-2 py-1 my-1 text-gray-700">$1</blockquote>');
-  
+  formattedText = formattedText.replace(
+    /^> (.*$)/gm,
+    '<blockquote class="border-l-4 border-gray-300 pl-2 py-1 my-1 text-gray-700">$1</blockquote>'
+  );
+
   // Conversion des sauts de ligne
-  formattedText = formattedText.replace(/\n/g, '<br/>');
-  
+  formattedText = formattedText.replace(/\n/g, "<br/>");
+
   return formattedText;
 };
 
@@ -49,34 +83,35 @@ export default function ChatMessage({
   onUpdate,
 }) {
   // Vérifie si le message contient une/des image(s)
-  const hasImage = message.image_url || (message.image_urls && message.image_urls.length > 0);
+  const hasImage =
+    message.image_url || (message.image_urls && message.image_urls.length > 0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
   const menuRef = useRef(null);
   const textareaRef = useRef(null);
-  
+
   // Vérifier si c'est le message de l'utilisateur actuel
   const isOwnMessage = currentUserId === message.user_id;
-  
+
   // Formater la date de création
   const messageDate = new Date(message.created_at);
   const formattedDate = isToday(messageDate)
     ? format(messageDate, "HH:mm")
     : format(messageDate, "dd/MM/yyyy HH:mm");
-  
+
   // Ouvrir/fermer le menu
   const toggleMenu = (e) => {
     e.stopPropagation();
     setIsMenuOpen(!isMenuOpen);
   };
-  
+
   // Démarrer l'édition du message
   const startEditing = (e) => {
     e.stopPropagation();
     setIsEditing(true);
     setIsMenuOpen(false);
-    
+
     // Focus sur le textarea après le rendu
     setTimeout(() => {
       if (textareaRef.current) {
@@ -88,13 +123,13 @@ export default function ChatMessage({
       }
     }, 10);
   };
-  
+
   // Annuler l'édition
   const cancelEditing = () => {
     setIsEditing(false);
     setEditedContent(message.content);
   };
-  
+
   // Sauvegarder les modifications
   const saveEditing = () => {
     if (editedContent.trim() !== "") {
@@ -102,7 +137,7 @@ export default function ChatMessage({
       setIsEditing(false);
     }
   };
-  
+
   // Gérer la touche Entrée pour sauvegarder
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -112,24 +147,24 @@ export default function ChatMessage({
       cancelEditing();
     }
   };
-  
+
   // Supprimer le message
   const handleDelete = (e) => {
     e.stopPropagation();
     setIsMenuOpen(false);
-    
+
     if (window.confirm("Êtes-vous sûr de vouloir supprimer ce message ?")) {
       onDelete(message.id);
     }
   };
-  
+
   // Ajuster automatiquement la hauteur du textarea
   const adjustTextareaHeight = (e) => {
     const textarea = e.target;
     textarea.style.height = "auto";
     textarea.style.height = textarea.scrollHeight + "px";
   };
-  
+
   return (
     <div
       className={`group p-2 hover:bg-gray-50 rounded-lg transition-colors ${
@@ -151,13 +186,15 @@ export default function ChatMessage({
             </span>
           </div>
         )}
-        
+
         {/* Contenu du message */}
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-900">{message.user_name}</span>
+            <span className="font-medium text-gray-900">
+              {message.user_name}
+            </span>
             <span className="text-xs text-gray-500">{formattedDate}</span>
-            
+
             {/* Menu d'actions (visible seulement pour ses propres messages) */}
             {isOwnMessage && !isEditing && (
               <div className="relative ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
@@ -167,7 +204,7 @@ export default function ChatMessage({
                 >
                   <MoreVertical size={16} />
                 </button>
-                
+
                 {isMenuOpen && (
                   <div
                     ref={menuRef}
@@ -192,7 +229,7 @@ export default function ChatMessage({
               </div>
             )}
           </div>
-          
+
           {/* Mode édition */}
           {isEditing ? (
             <div className="mt-1">
@@ -223,33 +260,38 @@ export default function ChatMessage({
           ) : (
             <div className="mt-1">
               {/* Affichage du contenu avec Markdown */}
-              <div 
+              <div
                 className="text-gray-800 whitespace-pre-wrap break-words"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
+                dangerouslySetInnerHTML={{
+                  __html: renderMarkdown(message.content),
+                }}
               />
-              
+
               {/* Affichage de l'image si présente */}
               {message.image_url && (
                 <div className="mt-2">
-                  <img 
-                    src={message.image_url} 
-                    alt="Image jointe" 
+                  <img
+                    src={message.image_url}
+                    alt="Image jointe"
                     className="max-w-xs max-h-60 object-cover rounded-md border border-gray-200 hover:opacity-90 cursor-pointer"
-                    onClick={() => window.open(message.image_url, '_blank')}
+                    onClick={() => window.open(message.image_url, "_blank")}
                   />
                 </div>
               )}
-              
+
               {/* Affichage des images multiples si présentes */}
               {message.image_urls && message.image_urls.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {message.image_urls.map((imgUrl, index) => (
-                    <div key={index} className="relative w-36 h-36 overflow-hidden">
-                      <img 
-                        src={imgUrl} 
-                        alt={`Image jointe ${index + 1}`} 
+                    <div
+                      key={index}
+                      className="relative w-36 h-36 overflow-hidden"
+                    >
+                      <img
+                        src={imgUrl}
+                        alt={`Image jointe ${index + 1}`}
                         className="absolute inset-0 w-full h-full object-cover rounded-md border border-gray-200 hover:opacity-90 cursor-pointer"
-                        onClick={() => window.open(imgUrl, '_blank')}
+                        onClick={() => window.open(imgUrl, "_blank")}
                       />
                     </div>
                   ))}

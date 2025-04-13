@@ -1,50 +1,42 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Mail, Trash2, Copy, Check, Clock, RefreshCw } from "lucide-react";
+import useInvitations from "@/lib/hooks/useInvitations";
 
 const PendingInvitations = ({ workspaceId }) => {
-  const [invitations, setInvitations] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [copied, setCopied] = useState({});
+  
+  // Utiliser notre hook personnalisé pour gérer les invitations
+  const { 
+    invitations, 
+    loading, 
+    error, 
+    fetchInvitations, 
+    deleteInvitation, 
+    copyInvitationLink 
+  } = useInvitations(workspaceId);
 
-  // Charger les invitations
-  const loadInvitations = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/workspaces/${workspaceId}/invitations`);
-      
-      if (!response.ok) {
-        throw new Error("Erreur lors du chargement des invitations");
-      }
-      
-      const data = await response.json();
-      setInvitations(data);
-    } catch (err) {
-      console.error("Erreur:", err);
-      setError(err.message || "Impossible de charger les invitations");
-    } finally {
-      setIsLoading(false);
-    }
+  // Gérer la copie avec feedback visuel
+  const handleCopyLink = (token) => {
+    copyInvitationLink(token);
+    
+    // Afficher l'indicateur de copie
+    setCopied({...copied, [token]: true});
+    
+    // Réinitialiser après 2 secondes
+    setTimeout(() => {
+      setCopied({...copied, [token]: false});
+    }, 2000);
   };
 
-  // Charger les invitations au chargement du composant
-  useEffect(() => {
-    if (workspaceId) {
-      loadInvitations();
+  // Gérer la suppression avec confirmation
+  const handleDeleteInvitation = async (token) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette invitation ?")) return;
+    
+    const success = await deleteInvitation(token);
+    if (!success) {
+      alert("Impossible de supprimer l'invitation");
     }
-  }, [workspaceId]);
-
-  // Formater la date d'expiration
-  const formatExpiryDate = (dateString) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
   };
 
   // Calculer le temps restant
@@ -66,43 +58,8 @@ const PendingInvitations = ({ workspaceId }) => {
     }
   };
 
-  // Copier un lien d'invitation
-  const copyInvitationLink = (token) => {
-    const baseUrl = window.location.origin;
-    const invitationLink = `${baseUrl}/invite/${token}`;
-    
-    navigator.clipboard.writeText(invitationLink);
-    setCopied({...copied, [token]: true});
-    
-    // Réinitialiser l'état après 2 secondes
-    setTimeout(() => {
-      setCopied({...copied, [token]: false});
-    }, 2000);
-  };
-
-  // Supprimer une invitation
-  const deleteInvitation = async (token) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette invitation ?")) return;
-    
-    try {
-      const response = await fetch(`/api/invitations/${token}`, {
-        method: 'DELETE'
-      });
-      
-      if (!response.ok) {
-        throw new Error("Erreur lors de la suppression de l'invitation");
-      }
-      
-      // Recharger les invitations
-      loadInvitations();
-    } catch (err) {
-      console.error("Erreur:", err);
-      alert("Impossible de supprimer l'invitation");
-    }
-  };
-
   // Affichage pendant le chargement
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="p-4 rounded-md border border-gray-200 bg-white">
         <div className="flex items-center justify-center py-6">
@@ -119,7 +76,7 @@ const PendingInvitations = ({ workspaceId }) => {
       <div className="p-4 rounded-md border border-red-200 bg-red-50">
         <p className="text-red-600">{error}</p>
         <button
-          onClick={loadInvitations}
+          onClick={fetchInvitations}
           className="mt-2 text-sm text-red-700 hover:underline flex items-center"
         >
           <RefreshCw size={14} className="mr-1" /> Réessayer
@@ -161,7 +118,7 @@ const PendingInvitations = ({ workspaceId }) => {
               </div>
               <div className="flex space-x-2">
                 <button
-                  onClick={() => copyInvitationLink(invitation.token)}
+                  onClick={() => handleCopyLink(invitation.token)}
                   className="p-1 rounded-md hover:bg-gray-100"
                   title="Copier le lien d'invitation"
                 >
@@ -172,7 +129,7 @@ const PendingInvitations = ({ workspaceId }) => {
                   )}
                 </button>
                 <button
-                  onClick={() => deleteInvitation(invitation.token)}
+                  onClick={() => handleDeleteInvitation(invitation.token)}
                   className="p-1 rounded-md hover:bg-gray-100 text-red-500"
                   title="Supprimer l'invitation"
                 >
